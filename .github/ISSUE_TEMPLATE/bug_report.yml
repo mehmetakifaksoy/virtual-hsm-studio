@@ -1,0 +1,40 @@
+name: Bug Report
+description: Report a problem with Virtual HSM Studio
+title: "[Bug]: "
+labels:
+  - bug
+
+body:
+  - type: textarea
+    attributes:
+      label: Description
+      description: What happened?
+    validations:
+      required: true
+
+  - type: textarea
+    attributes:
+      label: Steps to reproduce
+      description: Describe how to reproduce the issue.
+    validations:
+      required: true
+
+  - type: input
+    attributes:
+      label: Operating System
+      placeholder: Windows 11 / Ubuntu
+
+  - type: input
+    attributes:
+      label: Python Version
+      placeholder: Python 3.12
+
+  - type: textarea
+    attributes:
+      label: PKCS#11 Module
+      description: Vendor/module information if relevant. Never include secrets.
+
+  - type: textarea
+    attributes:
+      label: Logs
+      description: Remove PINs, credentials, private keys and sensitive data.

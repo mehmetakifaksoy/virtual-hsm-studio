@@ -1,0 +1,36 @@
+name: Feature Request
+description: Suggest a new capability
+title: "[Feature]: "
+labels:
+  - enhancement
+
+body:
+  - type: textarea
+    attributes:
+      label: Problem
+      description: What problem should this feature solve?
+    validations:
+      required: true
+
+  - type: textarea
+    attributes:
+      label: Proposed Solution
+      description: Describe the desired behavior.
+    validations:
+      required: true
+
+  - type: dropdown
+    attributes:
+      label: Area
+      options:
+        - Virtual HSM
+        - PKCS#11
+        - GUI
+        - Sessions
+        - Key Management
+        - Cryptographic Operations
+        - Certificates
+        - Audit
+        - Packaging
+        - Documentation
+        - Other
