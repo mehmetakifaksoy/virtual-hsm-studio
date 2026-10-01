@@ -20,3 +20,11 @@ class ValidationError(HsmError):
 
 class StateStoreError(HsmError):
     """Raised when virtual HSM state cannot be loaded or persisted."""
+
+
+class SessionError(HsmError):
+    """Raised for invalid session lifecycle operations."""
+
+
+class AuthenticationError(HsmError):
+    """Raised when USER/SO authentication fails or conflicts."""
