@@ -687,6 +687,31 @@ class VirtualHsmProvider(HsmProvider):
     # Mechanisms
     # ------------------------------------------------------------------
 
+    def simulate_key(self, session_id: int, algorithm: str, label: str) -> str:
+        session = self._session(session_id)
+        if not session.read_write or session.role is not SessionRole.USER:
+            raise SessionError("Key creation requires a read-write USER session.")
+        label = label.strip()
+        if not label:
+            raise ValidationError("Enter a key name.")
+        if algorithm not in ("AES-128", "AES-192", "AES-256", "RSA-2048", "RSA-3072", "RSA-4096"):
+            raise ValidationError("Unsupported key type.")
+        token = self._token_record(session.slot_id)
+        objects = token.setdefault("objects", [])
+        if any(o.get("label") == label for o in objects):
+            raise ValidationError("That key name already exists.")
+        ident = secrets.token_hex(16)
+        classes = (ObjectClass.SECRET_KEY,) if algorithm.startswith("AES") else (ObjectClass.PUBLIC_KEY, ObjectClass.PRIVATE_KEY)
+        for category in classes:
+            private = category is not ObjectClass.PUBLIC_KEY
+            item = ObjectInfo(object_id=secrets.token_hex(16), object_class=category,
+                              label=label, cka_id=ident, key_type=algorithm,
+                              private=private, sensitive=private, extractable=not private,
+                              attributes=(("simulated", True),))
+            objects.append(item.to_dict())
+        self._save()
+        return "Simulated key metadata created. No cryptographic key material was generated."
+
     def list_mechanisms(
         self,
         slot_id: int,

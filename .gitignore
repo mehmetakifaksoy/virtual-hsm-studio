@@ -8,3 +8,7 @@ dist/
 *.egg-info/
 *.log
 .DS_Store
+
+.hsm-data/
+work/
+tools/softhsm2/
