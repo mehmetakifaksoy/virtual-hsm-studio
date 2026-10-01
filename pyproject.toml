@@ -1,0 +1,42 @@
+[build-system]
+requires = ["setuptools>=75", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "softhsm-studio"
+version = "0.2.0"
+description = "Slot-oriented virtual HSM simulator and PKCS#11 module explorer with a desktop GUI"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+  "PySide6>=6.8,<7",
+  "python-pkcs11>=0.10,<0.11",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8,<10",
+  "ruff>=0.9,<1",
+  "pyinstaller>=6,<7",
+]
+
+[project.scripts]
+softhsm-studio = "softhsm_studio.app:main"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
+addopts = "-q"
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
