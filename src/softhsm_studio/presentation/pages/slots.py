@@ -63,6 +63,11 @@ class SlotsPage(QWidget):
         actions.addStretch(1)
         layout.addLayout(actions)
 
+        self.guidance = QLabel("Select a slot to inspect its token. Create, clear and delete are Virtual HSM operations.")
+        self.guidance.setObjectName("Muted")
+        self.guidance.setWordWrap(True)
+        layout.addWidget(self.guidance)
+
         splitter = QSplitter(Qt.Orientation.Horizontal)
         self.table = QTableWidget(0, 4)
         self.table.setHorizontalHeaderLabels(["Slot ID", "Description", "Token", "State"])
@@ -76,7 +81,7 @@ class SlotsPage(QWidget):
         self.table.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
         self.table.horizontalHeader().setStretchLastSection(True)
         self.table.itemSelectionChanged.connect(self._selection_changed)
-        self.table.doubleClicked.connect(self.manage_keys_requested)
+        self.table.doubleClicked.connect(self._manage_selected_keys)
         splitter.addWidget(self.table)
 
         self.details = QTextBrowser()
@@ -85,6 +90,10 @@ class SlotsPage(QWidget):
         splitter.addWidget(self.details)
         splitter.setSizes([620, 400])
         layout.addWidget(splitter, 1)
+
+    def _manage_selected_keys(self, index) -> None:
+        if self.keys_button.isEnabled():
+            self.manage_keys_requested.emit()
 
     @staticmethod
     def _button(text: str, signal, object_name: str = "") -> QPushButton:

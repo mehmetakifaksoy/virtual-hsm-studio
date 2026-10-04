@@ -14,11 +14,13 @@ from softhsm_studio.domain.models import ProviderInfo, ProviderKind, SlotInfo
 from softhsm_studio.domain.ports import HsmProvider
 
 from .protocol import Pkcs11Snapshot
+from softhsm_studio.process_runtime import worker_command
 
 
 class Pkcs11ModuleProvider(HsmProvider):
     """PKCS#11 provider that inspects vendor modules in an isolated subprocess."""
 
+    supports_key_management = True
     DEFAULT_TIMEOUT_SECONDS = 20
 
     def __init__(self, module_path: str | Path, timeout_seconds: int = DEFAULT_TIMEOUT_SECONDS) -> None:
@@ -35,6 +37,13 @@ class Pkcs11ModuleProvider(HsmProvider):
     @property
     def info(self) -> ProviderInfo:
         return self._snapshot.provider if self._snapshot else self._info
+
+    @property
+    def supports_token_initialization(self) -> bool:
+        """Current initialization adapter is limited to SoftHSM modules."""
+        return self._snapshot is not None and "softhsm" in (
+            f"{self.info.name} {self.info.description} {self.info.manufacturer}"
+        ).lower()
 
     def connect(self) -> None:
         self._validate_module_path()
@@ -103,10 +112,7 @@ class Pkcs11ModuleProvider(HsmProvider):
         fd, output_name = tempfile.mkstemp(prefix="softhsm-studio-pkcs11-", suffix=".json")
         os.close(fd)
         output_path = Path(output_name)
-        command = [
-            sys.executable,
-            "-m",
-            "softhsm_studio.infrastructure.pkcs11.worker",
+        command = worker_command("snapshot") + [
             "--module",
             str(self.module_path),
             "--output",

@@ -12,3 +12,4 @@ dist/
 .hsm-data/
 work/
 tools/softhsm2/
+packaging/uninstall-files.nsh

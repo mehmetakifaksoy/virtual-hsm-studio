@@ -7,6 +7,7 @@ import sys
 
 from softhsm_studio.domain.models import ObjectClass, ObjectInfo
 from softhsm_studio.infrastructure.pkcs11 import Pkcs11ModuleProvider
+from softhsm_studio.process_runtime import worker_command
 
 
 def slot_keys(service, slot_id, action, pin='', algorithm='', label='', so_pin='', user_pin=''):
@@ -16,7 +17,7 @@ def slot_keys(service, slot_id, action, pin='', algorithm='', label='', so_pin='
                        pin=pin, algorithm=algorithm, label=label, so_pin=so_pin, user_pin=user_pin)
         try:
             result = subprocess.run(
-                [sys.executable, '-m', 'softhsm_studio.infrastructure.pkcs11.key_worker'],
+                worker_command("keys"),
                 input=json.dumps(request), capture_output=True, text=True, timeout=60,
                 creationflags=getattr(subprocess, 'CREATE_NO_WINDOW', 0) if os.name == 'nt' else 0,
             )
