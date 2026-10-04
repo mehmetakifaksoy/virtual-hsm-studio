@@ -19,6 +19,7 @@ from .protocol import Pkcs11Snapshot
 class Pkcs11ModuleProvider(HsmProvider):
     """PKCS#11 provider that inspects vendor modules in an isolated subprocess."""
 
+    supports_key_management = True
     DEFAULT_TIMEOUT_SECONDS = 20
 
     def __init__(self, module_path: str | Path, timeout_seconds: int = DEFAULT_TIMEOUT_SECONDS) -> None:
@@ -35,6 +36,13 @@ class Pkcs11ModuleProvider(HsmProvider):
     @property
     def info(self) -> ProviderInfo:
         return self._snapshot.provider if self._snapshot else self._info
+
+    @property
+    def supports_token_initialization(self) -> bool:
+        """Current initialization adapter is limited to SoftHSM modules."""
+        return self._snapshot is not None and "softhsm" in (
+            f"{self.info.name} {self.info.description} {self.info.manufacturer}"
+        ).lower()
 
     def connect(self) -> None:
         self._validate_module_path()

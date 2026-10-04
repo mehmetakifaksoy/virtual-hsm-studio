@@ -59,6 +59,10 @@ class ProvidersPage(QWidget):
         form.addRow("Version", self.version)
         form.addRow("Module / state path", self.module_path)
         layout.addLayout(form)
+        self.capabilities = QLabel()
+        self.capabilities.setObjectName("Muted")
+        self.capabilities.setWordWrap(True)
+        layout.addWidget(self.capabilities)
         layout.addStretch(1)
 
     @staticmethod
@@ -77,3 +81,15 @@ class ProvidersPage(QWidget):
         self.load_module_button.setEnabled(not busy)
         self.virtual_button.setEnabled(not busy)
         self.refresh_button.setEnabled(connected and not busy)
+
+    def set_capabilities(self, service) -> None:
+        capabilities = (
+            ("Sessions", service.supports_sessions),
+            ("Objects", service.supports_objects),
+            ("Mechanisms", service.supports_mechanisms),
+            ("Virtual administration", service.supports_virtual_admin),
+        )
+        self.capabilities.setText("Capabilities · " + " · ".join(
+            f"{name}: {'available' if supported else 'not supported'}"
+            for name, supported in capabilities
+        ))

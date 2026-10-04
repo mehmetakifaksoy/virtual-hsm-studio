@@ -58,6 +58,18 @@ class HsmService:
         )
 
     @property
+    def supports_token_initialization(self) -> bool:
+        return bool(getattr(self._provider, "supports_token_initialization", False))
+
+    @property
+    def supports_key_management(self) -> bool:
+        # Existing isolated PKCS#11 key adapter; object discovery alone does
+        # not imply support for this generation workflow.
+        return self.supports_virtual_admin or bool(
+            getattr(self._provider, "supports_key_management", False)
+        )
+
+    @property
     def supports_sessions(self) -> bool:
         return isinstance(
             self._provider,
