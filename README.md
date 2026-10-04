@@ -24,6 +24,8 @@ The GUI never depends directly on a specific HSM vendor. New provider adapters c
 - Token label, serial, manufacturer, model and flag inspection
 - Isolated PKCS#11 worker with timeout and structured errors
 - Background provider load/refresh threads so vendor modules do not freeze the GUI
+- Modular management console with Dashboard, Providers, Slots and Sessions screens
+- Capability-aware session opening, login, logout and close workflows
 - Unit tests for core domain and virtual HSM behavior
 
 ## Windows setup
@@ -79,3 +81,29 @@ python -m pytest
 Virtual HSM mode is a simulator, not a hardware security module. It is suitable for UI development, integration tests and PKCS#11 workflow simulation. Do not store production secrets or production private keys in the virtual JSON state.
 
 See `SECURITY.md` and `docs/ARCHITECTURE.md`.
+
+## Separate DLL tools
+
+Run `Start Admin Tool.cmd` to load the PKCS#11 DLL and initialize a free
+SoftHSM token with its label, SO PIN and USER PIN. Run `Start Key Manager.cmd`
+separately to select that token, view keys and generate AES/RSA keys.
+The tools remember the same DLL; no PIN is saved in settings.
+
+The bundled local test DLL is
+`tools/softhsm2/SoftHSM2/lib/softhsm2-x64.dll` (SoftHSM 2.5.0 portable,
+https://github.com/disig/SoftHSM2-for-Windows). Its licenses remain in the package.
+Binary packages and token stores are ignored by Git. In a fresh checkout obtain
+that portable package and extract it under `tools/softhsm2`.
+
+Unless `SOFTHSM2_CONF` already points to your own configuration, both tools use
+`.hsm-data/softhsm2.conf` and `.hsm-data/tokens`. They create real software-HSM
+keys through the DLL; the old JSON metadata simulator is not used by these tools.
+SoftHSM exposes an uninitialized slot; initializing its token assigns a slot ID
+and exposes another free slot. Generic PKCS#11 does not provide CreateSlot.
+Vendor hardware setup remains in the vendor administration software.
+
+Run `Test DLL Workflow.cmd` to compile source and run tests including an isolated
+DLL workflow: initialize token, generate AES and RSA objects, reopen and verify
+persistence. This integration test uses a temporary token directory, separate
+from your application tokens. Tests have not been run in the restricted agent
+runtime because the virtual-environment interpreter cannot execute there.

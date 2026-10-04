@@ -18,7 +18,12 @@ class ProviderConnectThread(QThread):
             self.provider.connect()
             slots = self.provider.list_slots()
         except Exception as exc:
-            self.failed.emit(str(exc))
+            message = str(exc)
+            try:
+                self.provider.close()
+            except Exception as close_error:
+                message = f"{message}\nProvider cleanup failed: {close_error}"
+            self.failed.emit(message)
             return
         self.succeeded.emit(self.provider, slots)
 

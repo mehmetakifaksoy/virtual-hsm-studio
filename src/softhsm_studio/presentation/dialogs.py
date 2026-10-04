@@ -7,6 +7,7 @@ from PySide6.QtWidgets import (
     QDialogButtonBox,
     QFormLayout,
     QLineEdit,
+    QLabel,
     QMessageBox,
     QVBoxLayout,
 )
@@ -26,16 +27,22 @@ class CreateSlotDialog(QDialog):
         self.setMinimumWidth(430)
 
         self.description_edit = QLineEdit()
-        self.description_edit.setPlaceholderText("Development Slot")
+        self.description_edit.setPlaceholderText("e.g. Development or Signing")
 
         form = QFormLayout()
-        form.addRow("Description", self.description_edit)
+        form.addRow("Slot name", self.description_edit)
 
         buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
+        buttons.button(QDialogButtonBox.StandardButton.Ok).setText("Create Slot" if isinstance(self, CreateSlotDialog) else "Initialize Token")
+        buttons.button(QDialogButtonBox.StandardButton.Ok).setObjectName("PrimaryButton")
         buttons.accepted.connect(self._accept_if_valid)
         buttons.rejected.connect(self.reject)
 
         layout = QVBoxLayout(self)
+        help_text = QLabel("Give this slot a recognizable name. You can initialize its token after creating it." if isinstance(self, CreateSlotDialog) else "Choose a token name and two PINs (4–64 characters). The administrator PIN manages the token; the user PIN grants access to its keys.")
+        help_text.setWordWrap(True)
+        help_text.setObjectName("Muted")
+        layout.addWidget(help_text)
         layout.addLayout(form)
         layout.addWidget(buttons)
 
@@ -58,7 +65,7 @@ class InitializeTokenDialog(QDialog):
 
         self.label_edit = QLineEdit()
         self.so_pin_edit = self._password_edit("4–64 characters")
-        self.so_pin_confirm_edit = self._password_edit("Repeat SO PIN")
+        self.so_pin_confirm_edit = self._password_edit("Repeat administrator PIN")
         self.user_pin_edit = self._password_edit("4–64 characters")
         self.user_pin_confirm_edit = self._password_edit("Repeat User PIN")
 
@@ -66,16 +73,22 @@ class InitializeTokenDialog(QDialog):
 
         form = QFormLayout()
         form.addRow("Token label", self.label_edit)
-        form.addRow("SO PIN", self.so_pin_edit)
-        form.addRow("Confirm SO PIN", self.so_pin_confirm_edit)
+        form.addRow("Administrator PIN", self.so_pin_edit)
+        form.addRow("Confirm administrator PIN", self.so_pin_confirm_edit)
         form.addRow("User PIN", self.user_pin_edit)
         form.addRow("Confirm User PIN", self.user_pin_confirm_edit)
 
         buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
+        buttons.button(QDialogButtonBox.StandardButton.Ok).setText("Create Slot" if isinstance(self, CreateSlotDialog) else "Initialize Token")
+        buttons.button(QDialogButtonBox.StandardButton.Ok).setObjectName("PrimaryButton")
         buttons.accepted.connect(self._accept_if_valid)
         buttons.rejected.connect(self.reject)
 
         layout = QVBoxLayout(self)
+        help_text = QLabel("Give this slot a recognizable name. You can initialize its token after creating it." if isinstance(self, CreateSlotDialog) else "Choose a token name and two PINs (4–64 characters). The administrator PIN manages the token; the user PIN grants access to its keys.")
+        help_text.setWordWrap(True)
+        help_text.setObjectName("Muted")
+        layout.addWidget(help_text)
         layout.addLayout(form)
         layout.addWidget(buttons)
 
@@ -103,7 +116,7 @@ class InitializeTokenDialog(QDialog):
             QMessageBox.warning(self, "Validation", "PINs must contain 4–64 characters.")
             return
         if value.so_pin != self.so_pin_confirm_edit.text():
-            QMessageBox.warning(self, "Validation", "SO PIN confirmation does not match.")
+            QMessageBox.warning(self, "Validation", "Administrator PIN confirmation does not match.")
             return
         if value.user_pin != self.user_pin_confirm_edit.text():
             QMessageBox.warning(self, "Validation", "User PIN confirmation does not match.")

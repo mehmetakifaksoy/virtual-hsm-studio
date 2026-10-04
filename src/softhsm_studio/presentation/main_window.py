@@ -1,12 +1,12 @@
 from __future__ import annotations
 
-from html import escape
+from functools import partial
 from pathlib import Path
 
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, QTimer
 from PySide6.QtGui import QDragEnterEvent, QDropEvent
 from PySide6.QtWidgets import (
-    QAbstractItemView,
+    QDialog,
     QFileDialog,
     QFrame,
     QHBoxLayout,
@@ -14,41 +14,58 @@ from PySide6.QtWidgets import (
     QMainWindow,
     QMessageBox,
     QPushButton,
-    QSplitter,
-    QTableWidget,
-    QTableWidgetItem,
-    QTextBrowser,
+    QStackedWidget,
     QVBoxLayout,
     QWidget,
 )
 
 from softhsm_studio.application import HsmService
-from softhsm_studio.domain.models import ProviderKind, SlotInfo
+from softhsm_studio.domain.models import ProviderKind, SessionInfo, SessionRole, SlotInfo
 from softhsm_studio.infrastructure.pkcs11 import Pkcs11ModuleProvider
 from softhsm_studio.infrastructure.virtual_hsm import VirtualHsmProvider
+from softhsm_studio.runtime import DisconnectedProvider, prepare_module, settings
 
 from .dialogs import CreateSlotDialog, InitializeTokenDialog
+from .key_dialog import KeyOperation, SlotKeysDialog
+from .pages import DashboardPage, ProvidersPage, SessionsPage, SlotsPage
 from .workers import ProviderConnectThread, ProviderRefreshThread
 
 
 class MainWindow(QMainWindow):
     MODULE_SUFFIXES = {".dll", ".so", ".dylib"}
+    PAGE_NAMES = ("Dashboard", "Providers", "Slots", "Sessions")
 
-    def __init__(self) -> None:
+    def __init__(self, tool: str = "admin") -> None:
         super().__init__()
-        self.setWindowTitle("SoftHSM Studio")
+        self.tool = tool
+        self.setWindowTitle("Virtual HSM Studio · HSM Management Console")
         self.resize(1320, 820)
         self.setMinimumSize(1080, 680)
         self.setAcceptDrops(True)
 
-        self.service = HsmService(VirtualHsmProvider())
+        self.service = HsmService(DisconnectedProvider())
         self.slots: list[SlotInfo] = self.service.slots()
+        self.sessions: list[SessionInfo] = []
         self._threads: set[object] = set()
         self._busy = False
+        self._last_status = "Connect an HSM provider to begin."
 
         self._build_ui()
         self._render_provider()
         self._render_slots(self.slots)
+        self._set_status(self._last_status)
+
+        bundled_module = (
+            Path(__file__).resolve().parents[3]
+            / "tools"
+            / "softhsm2"
+            / "SoftHSM2"
+            / "lib"
+            / "softhsm2-x64.dll"
+        )
+        last_module = settings().value("module", "") or str(bundled_module)
+        if last_module and Path(last_module).is_file():
+            QTimer.singleShot(0, lambda: self._load_module(Path(last_module)))
 
     def _build_ui(self) -> None:
         root = QWidget()
@@ -58,60 +75,32 @@ class MainWindow(QMainWindow):
 
         sidebar = QFrame()
         sidebar.setObjectName("Sidebar")
-        sidebar.setFixedWidth(270)
+        sidebar.setFixedWidth(235)
         side_layout = QVBoxLayout(sidebar)
         side_layout.setContentsMargins(18, 18, 18, 18)
         side_layout.setSpacing(10)
 
-        title = QLabel("SoftHSM Studio")
+        title = QLabel("Virtual HSM Studio")
         title.setObjectName("AppTitle")
-        subtitle = QLabel("Virtual HSM + PKCS#11 Explorer")
+        subtitle = QLabel("HSM management console")
         subtitle.setObjectName("Muted")
         subtitle.setWordWrap(True)
-        self.provider_badge = QLabel()
-        self.provider_badge.setObjectName("ProviderBadge")
-        self.provider_badge.setWordWrap(True)
-
         side_layout.addWidget(title)
         side_layout.addWidget(subtitle)
-        side_layout.addSpacing(6)
-        side_layout.addWidget(self.provider_badge)
-        side_layout.addSpacing(14)
-        side_layout.addWidget(self._section_label("HSM SOURCE"))
+        side_layout.addSpacing(12)
 
-        self.virtual_button = QPushButton("Use Virtual HSM")
-        self.virtual_button.clicked.connect(self._switch_to_virtual)
-        self.load_module_button = QPushButton("Load PKCS#11 Module…")
-        self.load_module_button.setObjectName("PrimaryButton")
-        self.load_module_button.clicked.connect(self._choose_module)
-        self.refresh_button = QPushButton("Refresh Slots")
-        self.refresh_button.clicked.connect(self._refresh_provider)
+        self.navigation: list[QPushButton] = []
+        for index, page_name in enumerate(self.PAGE_NAMES):
+            button = QPushButton(page_name)
+            button.setObjectName("NavigationButton")
+            button.setCheckable(True)
+            button.clicked.connect(partial(self._navigate, index))
+            self.navigation.append(button)
+            side_layout.addWidget(button)
 
-        side_layout.addWidget(self.virtual_button)
-        side_layout.addWidget(self.load_module_button)
-        side_layout.addWidget(self.refresh_button)
-        side_layout.addSpacing(14)
-        side_layout.addWidget(self._section_label("VIRTUAL HSM"))
-
-        self.create_slot_button = QPushButton("Create Slot")
-        self.create_slot_button.clicked.connect(self._create_slot)
-        self.initialize_button = QPushButton("Initialize Token")
-        self.initialize_button.clicked.connect(self._initialize_token)
-        self.clear_button = QPushButton("Clear Token")
-        self.clear_button.clicked.connect(self._clear_token)
-        self.delete_button = QPushButton("Delete Slot")
-        self.delete_button.setObjectName("DangerButton")
-        self.delete_button.clicked.connect(self._delete_slot)
-
-        side_layout.addWidget(self.create_slot_button)
-        side_layout.addWidget(self.initialize_button)
-        side_layout.addWidget(self.clear_button)
-        side_layout.addWidget(self.delete_button)
         side_layout.addStretch(1)
-
         warning = QLabel(
-            "Virtual mode simulates HSM behavior for development. "
-            "It is not a hardware security boundary."
+            "Virtual mode is for development and testing. It is not a hardware security boundary."
         )
         warning.setObjectName("Muted")
         warning.setWordWrap(True)
@@ -123,53 +112,71 @@ class MainWindow(QMainWindow):
         content_layout.setContentsMargins(18, 18, 18, 18)
         content_layout.setSpacing(12)
 
-        header_layout = QHBoxLayout()
-        self.provider_title = QLabel()
+        header = QHBoxLayout()
+        self.provider_badge = QLabel("Not connected")
+        self.provider_badge.setObjectName("ProviderBadge")
+        self.provider_title = QLabel("HSM Management Console")
         self.provider_title.setStyleSheet("font-size: 16pt; font-weight: 700;")
-        self.slot_count = QLabel()
+        self.slot_count = QLabel("0 slots")
         self.slot_count.setObjectName("Muted")
-        header_layout.addWidget(self.provider_title)
-        header_layout.addStretch(1)
-        header_layout.addWidget(self.slot_count)
-        content_layout.addLayout(header_layout)
+        header.addWidget(self.provider_badge)
+        header.addWidget(self.provider_title)
+        header.addStretch(1)
+        header.addWidget(self.slot_count)
+        content_layout.addLayout(header)
 
         self.provider_detail = QLabel()
         self.provider_detail.setObjectName("Muted")
-        self.provider_detail.setTextInteractionFlags(Qt.TextSelectableByMouse)
+        self.provider_detail.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
         self.provider_detail.setWordWrap(True)
         content_layout.addWidget(self.provider_detail)
 
-        splitter = QSplitter(Qt.Vertical)
-        self.table = QTableWidget(0, 7)
-        self.table.setHorizontalHeaderLabels(
-            ["Slot ID", "Description", "Token", "Manufacturer", "Model", "Serial", "State"]
-        )
-        self.table.setAlternatingRowColors(True)
-        self.table.setSelectionBehavior(QAbstractItemView.SelectRows)
-        self.table.setSelectionMode(QAbstractItemView.SingleSelection)
-        self.table.setEditTriggers(QAbstractItemView.NoEditTriggers)
-        self.table.verticalHeader().setVisible(False)
-        self.table.horizontalHeader().setStretchLastSection(True)
-        self.table.itemSelectionChanged.connect(self._show_selected_slot)
-        self.table.doubleClicked.connect(self._show_selected_slot)
-        splitter.addWidget(self.table)
+        self.feedback = QLabel()
+        self.feedback.setObjectName("Feedback")
+        self.feedback.setWordWrap(True)
+        content_layout.addWidget(self.feedback)
 
-        self.details = QTextBrowser()
-        self.details.setOpenExternalLinks(False)
-        splitter.addWidget(self.details)
-        splitter.setSizes([470, 250])
-        content_layout.addWidget(splitter, 1)
+        self.dashboard_page = DashboardPage()
+        self.providers_page = ProvidersPage()
+        self.slots_page = SlotsPage()
+        self.sessions_page = SessionsPage()
+        self.page_stack = QStackedWidget()
+        for page in (
+            self.dashboard_page,
+            self.providers_page,
+            self.slots_page,
+            self.sessions_page,
+        ):
+            self.page_stack.addWidget(page)
+        content_layout.addWidget(self.page_stack, 1)
 
         root_layout.addWidget(sidebar)
         root_layout.addWidget(content, 1)
         self.setCentralWidget(root)
-        self.statusBar().showMessage("Ready")
+        self.statusBar().showMessage(self._last_status)
 
-    @staticmethod
-    def _section_label(text: str) -> QLabel:
-        label = QLabel(text)
-        label.setObjectName("SectionTitle")
-        return label
+        self.providers_page.load_module_requested.connect(self._choose_module)
+        self.providers_page.virtual_provider_requested.connect(self._switch_to_virtual)
+        self.providers_page.refresh_requested.connect(self._refresh_provider)
+        self.slots_page.slot_selected.connect(self._slot_selection_changed)
+        self.slots_page.create_slot_requested.connect(self._create_slot)
+        self.slots_page.initialize_token_requested.connect(self._initialize_token)
+        self.slots_page.clear_token_requested.connect(self._clear_token)
+        self.slots_page.delete_slot_requested.connect(self._delete_slot)
+        self.slots_page.manage_keys_requested.connect(self._open_slot_keys)
+        self.sessions_page.refresh_requested.connect(self._refresh_sessions)
+        self.sessions_page.open_session_requested.connect(self._open_session)
+        self.sessions_page.close_session_requested.connect(self._close_session)
+        self.sessions_page.login_requested.connect(self._login_session)
+        self.sessions_page.logout_requested.connect(self._logout_session)
+        self._navigate(0)
+
+    def _navigate(self, page_index: int, checked: bool = True) -> None:
+        self.page_stack.setCurrentIndex(page_index)
+        for index, button in enumerate(self.navigation):
+            button.setChecked(index == page_index)
+        if not checked:
+            self.navigation[page_index].setChecked(True)
 
     def _choose_module(self) -> None:
         path, _ = QFileDialog.getOpenFileName(
@@ -185,12 +192,16 @@ class MainWindow(QMainWindow):
         if not path.exists() or not path.is_file():
             self._show_error(f"Module file does not exist: {path}")
             return
-        provider = Pkcs11ModuleProvider(path)
+        try:
+            module_path = prepare_module(path)
+            provider = Pkcs11ModuleProvider(module_path)
+        except Exception as exc:
+            self._show_error(str(exc))
+            return
         self._connect_provider_async(provider, f"Loading {path.name}…")
 
     def _switch_to_virtual(self) -> None:
-        provider = VirtualHsmProvider()
-        self._connect_provider_async(provider, "Opening Virtual HSM…")
+        self._connect_provider_async(VirtualHsmProvider(), "Opening Virtual HSM…")
 
     def _connect_provider_async(self, provider, status: str) -> None:
         self._set_busy(True, status)
@@ -203,17 +214,22 @@ class MainWindow(QMainWindow):
 
     def _provider_connected(self, provider, slots) -> None:
         self.service.activate_connected(provider)
-        self.slots = list(slots)
+        if isinstance(provider, Pkcs11ModuleProvider):
+            settings().setValue("module", str(provider.module_path))
         self._render_provider()
-        self._render_slots(self.slots)
-        self._set_busy(False, f"Loaded {len(self.slots)} slot(s)")
+        self._render_slots(list(slots))
+        self._set_status(f"Connected · {len(self.slots)} slot(s) available")
+        self._set_busy(False, self._last_status)
 
     def _provider_connect_failed(self, message: str) -> None:
-        self._set_busy(False, "Provider load failed")
+        self._set_busy(False, "Provider connection failed")
         self._show_error(message)
 
     def _refresh_provider(self) -> None:
-        self._set_busy(True, "Refreshing slots…")
+        if isinstance(self.service.provider, DisconnectedProvider):
+            self._show_error("Connect a provider before refreshing.")
+            return
+        self._set_busy(True, "Refreshing provider slots…")
         thread = ProviderRefreshThread(self.service.provider, self)
         self._threads.add(thread)
         thread.succeeded.connect(self._refresh_finished)
@@ -222,13 +238,13 @@ class MainWindow(QMainWindow):
         thread.start()
 
     def _refresh_finished(self, slots) -> None:
-        self.slots = list(slots)
         self._render_provider()
-        self._render_slots(self.slots)
-        self._set_busy(False, f"Refreshed {len(self.slots)} slot(s)")
+        self._render_slots(list(slots))
+        self._set_status(f"Refreshed {len(self.slots)} slot(s)")
+        self._set_busy(False, self._last_status)
 
     def _refresh_failed(self, message: str) -> None:
-        self._set_busy(False, "Refresh failed")
+        self._set_busy(False, "Provider refresh failed")
         self._show_error(message)
 
     def _release_thread(self, thread) -> None:
@@ -237,104 +253,83 @@ class MainWindow(QMainWindow):
 
     def _render_provider(self) -> None:
         info = self.service.provider_info
+        connected = not isinstance(self.service.provider, DisconnectedProvider)
         kind = "Virtual" if info.kind is ProviderKind.VIRTUAL else "PKCS#11"
-        self.provider_badge.setText(f"{kind} · Connected")
-        self.provider_title.setText(info.name or kind)
+        self.provider_badge.setText(f"{kind} · Connected" if connected else "Not connected")
+        self.provider_title.setText(info.name if connected else "HSM Management Console")
         parts = [part for part in (info.manufacturer, info.version, info.module_path) if part]
-        self.provider_detail.setText("  •  ".join(parts))
-        self._update_virtual_buttons()
+        self.provider_detail.setText(" · ".join(parts) if connected else info.description)
+        self.providers_page.set_provider(info, connected, self._busy)
 
-    def _render_slots(self, slots: list[SlotInfo]) -> None:
-        self.table.setRowCount(len(slots))
-        for row, slot in enumerate(slots):
-            token = slot.token
-            values = (
-                str(slot.slot_id),
-                slot.description or "—",
-                token.label if token else "—",
-                token.manufacturer if token and token.manufacturer else slot.manufacturer or "—",
-                token.model if token else "—",
-                token.serial if token else "—",
-                slot.state,
+    def _render_slots(self, slots: list[SlotInfo], selected_id: int | None = None) -> None:
+        self.slots = list(slots)
+        self.slots_page.set_slots(self.slots, selected_id)
+        self.slot_count.setText(f"{len(self.slots)} slot{'s' if len(self.slots) != 1 else ''}")
+        self._render_sessions()
+        self._update_virtual_buttons()
+        self._update_dashboard()
+
+    def _render_sessions(self) -> None:
+        supported = self.service.supports_sessions
+        try:
+            self.sessions = self.service.sessions() if supported else []
+        except Exception as exc:
+            self.sessions = []
+            self.sessions_page.set_data(
+                self.slots,
+                self.sessions,
+                supported,
+                self._busy,
             )
-            for column, value in enumerate(values):
-                item = QTableWidgetItem(value)
-                item.setData(Qt.UserRole, slot.slot_id)
-                if column in (0, 6):
-                    item.setTextAlignment(Qt.AlignCenter)
-                self.table.setItem(row, column, item)
-
-        self.table.resizeColumnsToContents()
-        self.slot_count.setText(f"{len(slots)} slot{'s' if len(slots) != 1 else ''}")
-        if slots:
-            self.table.selectRow(0)
-        else:
-            self.details.setHtml("<p>No slots were reported by this provider.</p>")
-        self._update_virtual_buttons()
-
-    def _show_selected_slot(self) -> None:
-        slot = self._selected_slot()
-        if slot is None:
-            self.details.clear()
+            self.sessions_page.message.setText(f"Could not load sessions: {exc}")
+            self._show_error(f"Could not load active HSM sessions: {exc}")
             return
-
-        slot_flags = ", ".join(slot.flags) or "—"
-        diagnostic = (
-            f"<p><b>Diagnostic:</b> {escape(slot.diagnostic)}</p>" if slot.diagnostic else ""
+        self.sessions_page.set_data(
+            self.slots,
+            self.sessions,
+            supported,
+            self._busy,
         )
-        token_html = "<p><i>No token present.</i></p>"
-        if slot.token is not None:
-            token = slot.token
-            token_flags = ", ".join(token.flags) or "—"
-            token_html = f"""
-            <h3>Token</h3>
-            <table cellspacing='5'>
-              <tr><td><b>Label</b></td><td>{escape(token.label)}</td></tr>
-              <tr><td><b>Serial</b></td><td>{escape(token.serial)}</td></tr>
-              <tr><td><b>Model</b></td><td>{escape(token.model)}</td></tr>
-              <tr><td><b>Manufacturer</b></td><td>{escape(token.manufacturer)}</td></tr>
-              <tr><td><b>Initialized</b></td><td>{'Yes' if token.initialized else 'No'}</td></tr>
-              <tr><td><b>Login required</b></td><td>{'Yes' if token.login_required else 'No'}</td></tr>
-              <tr><td><b>User PIN initialized</b></td><td>{'Yes' if token.user_pin_initialized else 'No'}</td></tr>
-              <tr><td><b>Write protected</b></td><td>{'Yes' if token.write_protected else 'No'}</td></tr>
-              <tr><td><b>Flags</b></td><td>{escape(token_flags)}</td></tr>
-            </table>
-            """
 
-        self.details.setHtml(
-            f"""
-            <h2>Slot {slot.slot_id}</h2>
-            <table cellspacing='5'>
-              <tr><td><b>Description</b></td><td>{escape(slot.description)}</td></tr>
-              <tr><td><b>Manufacturer</b></td><td>{escape(slot.manufacturer)}</td></tr>
-              <tr><td><b>Hardware</b></td><td>{escape(slot.hardware_version or '—')}</td></tr>
-              <tr><td><b>Firmware</b></td><td>{escape(slot.firmware_version or '—')}</td></tr>
-              <tr><td><b>Flags</b></td><td>{escape(slot_flags)}</td></tr>
-              <tr><td><b>State</b></td><td>{escape(slot.state)}</td></tr>
-            </table>
-            {diagnostic}
-            <hr>
-            {token_html}
-            """
+    def _update_dashboard(self) -> None:
+        info = self.service.provider_info
+        connected = not isinstance(self.service.provider, DisconnectedProvider)
+        self.dashboard_page.set_state(
+            info,
+            connected,
+            self.slots,
+            self.sessions,
+            self.service.supports_sessions,
+            self._last_status,
         )
+
+    def _slot_selection_changed(self, slot: SlotInfo | None) -> None:
+        if slot != self._selected_slot():
+            return
         self._update_virtual_buttons()
 
     def _selected_slot(self) -> SlotInfo | None:
-        rows = self.table.selectionModel().selectedRows()
-        if not rows:
-            return None
-        row = rows[0].row()
-        if 0 <= row < len(self.slots):
-            return self.slots[row]
-        return None
+        return self.slots_page.selected_slot
+
+    def _open_slot_keys(self) -> None:
+        slot = self._selected_slot()
+        if self._busy or slot is None:
+            return
+        if slot.token is None or not slot.token.initialized:
+            self._show_error("Initialize a token in this slot before managing keys.")
+            return
+        SlotKeysDialog(self.service, slot, self).exec()
 
     def _create_slot(self) -> None:
         dialog = CreateSlotDialog(self)
-        if dialog.exec() != dialog.Accepted:
+        if dialog.exec() != QDialog.DialogCode.Accepted:
             return
         try:
-            self.service.create_virtual_slot(dialog.description)
-            self._reload_virtual_slots("Slot created")
+            created = self.service.create_virtual_slot(dialog.description)
+            self._reload_virtual_slots(
+                f"Slot {created.slot_id} created. Initialize its token to continue.",
+                created.slot_id,
+            )
         except Exception as exc:
             self._show_error(str(exc))
 
@@ -344,9 +339,26 @@ class MainWindow(QMainWindow):
             self._show_error("Select a slot first.")
             return
         dialog = InitializeTokenDialog(self)
-        if dialog.exec() != dialog.Accepted:
+        if dialog.exec() != QDialog.DialogCode.Accepted:
             return
         value = dialog.value
+        if isinstance(self.service.provider, Pkcs11ModuleProvider):
+            self._set_busy(True, "Initializing the selected token…")
+            worker = KeyOperation(
+                self.service,
+                slot.slot_id,
+                "initialize",
+                self,
+                label=value.label,
+                so_pin=value.so_pin,
+                user_pin=value.user_pin,
+            )
+            self._threads.add(worker)
+            worker.succeeded.connect(self._token_initialized)
+            worker.failed.connect(self._token_initialize_failed)
+            worker.finished.connect(lambda: self._release_thread(worker))
+            worker.start()
+            return
         try:
             self.service.initialize_virtual_token(
                 slot.slot_id,
@@ -357,6 +369,22 @@ class MainWindow(QMainWindow):
             self._reload_virtual_slots(f"Token initialized in slot {slot.slot_id}")
         except Exception as exc:
             self._show_error(str(exc))
+
+    def _token_initialized(self, result) -> None:
+        try:
+            self._render_slots(self.service.refresh())
+        except Exception as exc:
+            self._set_busy(
+                False,
+                "Initialization completed, but slot refresh failed. Refresh before retrying.",
+            )
+            self._show_error(str(exc))
+            return
+        self._set_busy(False, result["message"])
+
+    def _token_initialize_failed(self, message: str) -> None:
+        self._set_busy(False, "Token initialization failed. Refresh slots before retrying.")
+        self._show_error(message)
 
     def _clear_token(self) -> None:
         slot = self._selected_slot()
@@ -370,9 +398,10 @@ class MainWindow(QMainWindow):
             self,
             "Clear Virtual Token",
             f"Clear the token from virtual slot {slot.slot_id}?\n\n"
-            "All simulated token metadata and future objects in this token will be deleted.",
+            "The token and all its stored objects will be permanently removed. "
+            "The slot will remain available.",
         )
-        if result != QMessageBox.Yes:
+        if result != QMessageBox.StandardButton.Yes:
             return
         try:
             self.service.clear_virtual_token(slot.slot_id)
@@ -388,9 +417,12 @@ class MainWindow(QMainWindow):
         result = QMessageBox.question(
             self,
             "Delete Virtual Slot",
-            f"Delete virtual slot {slot.slot_id} ({slot.description})?",
+            f"Delete virtual slot {slot.slot_id} ({slot.description})?\n\n"
+            "The slot, its token and any stored objects will be permanently removed.",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.No,
         )
-        if result != QMessageBox.Yes:
+        if result != QMessageBox.StandardButton.Yes:
             return
         try:
             self.service.delete_virtual_slot(slot.slot_id)
@@ -398,37 +430,131 @@ class MainWindow(QMainWindow):
         except Exception as exc:
             self._show_error(str(exc))
 
-    def _reload_virtual_slots(self, status: str) -> None:
-        self.slots = self.service.slots()
-        self._render_slots(self.slots)
-        self.statusBar().showMessage(status, 5000)
+    def _reload_virtual_slots(
+        self,
+        status: str,
+        selected_id: int | None = None,
+    ) -> None:
+        self._render_slots(self.service.slots(), selected_id)
+        self._set_status(status)
 
     def _update_virtual_buttons(self) -> None:
-        enabled = self.service.supports_virtual_admin and not self._busy
         selected = self._selected_slot()
-        self.create_slot_button.setEnabled(enabled)
-        self.initialize_button.setEnabled(enabled and selected is not None)
-        self.clear_button.setEnabled(enabled and selected is not None and selected.token is not None)
-        self.delete_button.setEnabled(enabled and selected is not None)
+        info = self.service.provider_info
+        is_virtual_admin = self.service.supports_virtual_admin
+        provider_details = f"{info.name} {info.description} {info.manufacturer}".lower()
+        can_initialize = (
+            selected is not None
+            and (selected.token is None or not selected.token.initialized)
+            and (is_virtual_admin or "softhsm" in provider_details)
+        )
+        initialized = (
+            selected is not None and selected.token is not None and selected.token.initialized
+        )
+        self.slots_page.set_action_availability(
+            can_create=is_virtual_admin and not self._busy,
+            can_initialize=can_initialize and not self._busy,
+            can_clear=(
+                is_virtual_admin
+                and selected is not None
+                and selected.token is not None
+                and not self._busy
+            ),
+            can_delete=is_virtual_admin and selected is not None and not self._busy,
+            can_manage_keys=initialized and not self._busy,
+        )
+
+    def _refresh_sessions(self) -> None:
+        if not self.service.supports_sessions:
+            self._show_error("The active provider does not support session management.")
+            return
+        try:
+            self.sessions = self.service.sessions()
+        except Exception as exc:
+            self._show_error(str(exc))
+            return
+        self.sessions_page.set_data(
+            self.slots,
+            self.sessions,
+            True,
+            self._busy,
+        )
+        self._update_dashboard()
+
+    def _open_session(self, slot_id: int, read_write: bool) -> None:
+        try:
+            self.service.open_session(slot_id, read_write=read_write)
+            self._refresh_sessions()
+            self._set_status(f"Opened a session on slot {slot_id}")
+        except Exception as exc:
+            self._show_error(str(exc))
+
+    def _close_session(self, session_id: int) -> None:
+        try:
+            self.service.close_session(session_id)
+            self._refresh_sessions()
+            self._set_status(f"Closed session {session_id}")
+        except Exception as exc:
+            self._show_error(str(exc))
+
+    def _login_session(self, session_id: int, role: str, pin: str) -> None:
+        try:
+            if role == SessionRole.SO.value.upper():
+                self.service.login_so(session_id, pin)
+            else:
+                self.service.login_user(session_id, pin)
+        except Exception as exc:
+            self._show_error(str(exc))
+        finally:
+            pin = ""
+        self._refresh_sessions()
+
+    def _logout_session(self, session_id: int) -> None:
+        try:
+            self.service.logout(session_id)
+            self._refresh_sessions()
+            self._set_status(f"Logged out session {session_id}")
+        except Exception as exc:
+            self._show_error(str(exc))
 
     def _set_busy(self, busy: bool, message: str) -> None:
         self._busy = busy
-        self.load_module_button.setEnabled(not busy)
-        self.virtual_button.setEnabled(not busy)
-        self.refresh_button.setEnabled(not busy)
-        self.statusBar().showMessage(message)
+        self.providers_page.set_provider(
+            self.service.provider_info,
+            not isinstance(self.service.provider, DisconnectedProvider),
+            busy,
+        )
+        self.sessions_page.set_busy(busy, self.service.supports_sessions)
+        self._set_status(message)
+        self._update_virtual_buttons()
         if busy:
-            self.setCursor(Qt.WaitCursor)
+            self.setCursor(Qt.CursorShape.WaitCursor)
         else:
             self.unsetCursor()
-        self._update_virtual_buttons()
+
+    def _set_status(self, message: str) -> None:
+        self._last_status = message
+        self.feedback.setText(message)
+        self.statusBar().showMessage(message, 5000)
+        self.dashboard_page.set_status(message)
 
     def _show_error(self, message: str) -> None:
-        QMessageBox.critical(self, "SoftHSM Studio", message)
+        self._set_status(message)
+        QMessageBox.critical(self, "Virtual HSM Studio", message)
+
+    def closeEvent(self, event) -> None:
+        if self._threads:
+            self.feedback.setText("Wait for the current HSM operation to finish before closing.")
+            event.ignore()
+            return
+        self.service.close()
+        event.accept()
 
     def dragEnterEvent(self, event: QDragEnterEvent) -> None:
         urls = event.mimeData().urls()
-        if any(self._is_supported_module(Path(url.toLocalFile())) for url in urls if url.isLocalFile()):
+        if any(
+            self._is_supported_module(Path(url.toLocalFile())) for url in urls if url.isLocalFile()
+        ):
             event.acceptProposedAction()
 
     def dropEvent(self, event: QDropEvent) -> None:

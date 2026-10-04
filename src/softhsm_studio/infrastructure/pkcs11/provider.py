@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import os
 import subprocess
+import struct
 import sys
 import tempfile
 from pathlib import Path
@@ -58,6 +59,27 @@ class Pkcs11ModuleProvider(HsmProvider):
             raise ProviderLoadError(f"PKCS#11 module does not exist: {self.module_path}")
         if not self.module_path.is_file():
             raise ProviderLoadError(f"PKCS#11 module path is not a file: {self.module_path}")
+
+        if os.name == 'nt' and self.module_path.suffix.lower() == '.dll':
+            try:
+                with self.module_path.open('rb') as module:
+                    if module.read(2) != b'MZ':
+                        return
+                    module.seek(60)
+                    offset = struct.unpack('<I', module.read(4))[0]
+                    module.seek(offset)
+                    if module.read(4) != b'PE\x00\x00':
+                        return
+                    machine = struct.unpack('<H', module.read(2))[0]
+                expected = 0x8664 if struct.calcsize('P') == 8 else 0x14c
+                if machine in (0x14c, 0x8664) and machine != expected:
+                    bits = 32 if machine == 0x14c else 64
+                    raise ProviderLoadError(
+                        f'This DLL is {bits}-bit, but the application runs on {struct.calcsize("P") * 8}-bit Python. '
+                        'Select a matching PKCS#11 DLL from your HSM vendor client package.'
+                    )
+            except (OSError, struct.error) as exc:
+                raise ProviderLoadError('Could not inspect the DLL architecture.') from exc
 
     def _read_snapshot(self) -> Pkcs11Snapshot:
         payload = self._run_worker()
