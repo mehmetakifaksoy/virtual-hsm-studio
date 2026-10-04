@@ -15,7 +15,7 @@ The builds are unsigned POC previews, not certified production HSM software.
 ## Connect an HSM
 
 Use an x64 PKCS#11 module matching the application architecture. Install/configure vendor dependencies first.
-Procenne uses its vendor module; the suite does not implement a replacement for that DLL.
+Use the HSM manufacturer's module; the suite does not implement a replacement for vendor DLLs.
 SoftHSM2 is an alternative software provider for real cryptographic testing. Obtain it from a trusted distribution;
 no vendor DLL is included in GitHub source or release assets.
 

@@ -41,4 +41,4 @@ Identical public keys saved under different file names are interchangeable.
 ## Current boundaries
 
 No private/secret-key export, wrapped-key backup, RSA-PSS, ECDSA, certificates, timestamping or PDF signature UI.
-SoftHSM2 integration has been tested. Hardware support, including Procenne, requires a separate device pilot.
+SoftHSM2 integration has been tested. Hardware support requires a separate device pilot.
