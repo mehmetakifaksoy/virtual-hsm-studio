@@ -1,49 +1,53 @@
-# Windows POC preview (0.4.0 beta 1)
+# Windows POC guide — 0.4.0-beta.2
 
-## Install and start
+## Install
 
-1. Run `VirtualHsmStudio-0.4.0-beta.1-Setup.exe` on 64-bit Windows 10/11.
-2. The installer uses your Windows account and does not require Python or administrator access.
-3. Open **Virtual HSM Studio** from the Start menu.
-4. Choose **Start Virtual HSM** on the Dashboard.
+Download the three independent Setup executables from the GitHub release Assets. Python is not needed.
+Applications install for the current user under `%LOCALAPPDATA%\Programs\VirtualHsmStudio`,
+`%LOCALAPPDATA%\Programs\HsmKeyManager` and `%LOCALAPPDATA%\Programs\HsmSignVerify`.
+Close the corresponding app before installing an update. Each tool has its own uninstaller.
+Uninstallation removes packaged application files and preserves token stores and unrelated files.
 
-This preview is unsigned. Use your organization's normal policy for unsigned internal POC software. A signed build is required before broad distribution.
+Portable ZIPs contain the GUI EXE, HsmWorker.exe, _internal and documentation. Extract the whole ZIP;
+keep the directory intact. A short path such as `%USERPROFILE%\HsmTools` is convenient.
+The builds are unsigned POC previews, not certified production HSM software.
 
-## Five-minute walkthrough
+## Connect an HSM
 
-1. **Slots:** select a slot and choose **Initialize Token**. Enter a label and choose your own administrator (SO) and USER PINs.
-2. **Sessions:** select the initialized token, keep read-only selected, then choose **Open Session**.
-3. Select the session row and choose **Login**, then **USER** and your USER PIN.
-4. Try **Logout** and **Close Session**.
-5. Open a read/write session. With all read-only sessions closed, choose **SO** to test administration authentication.
-6. **Slots → Manage Keys:** simulate a named AES or RSA key. Virtual mode creates metadata, not usable cryptographic key material.
-7. On test data only, try **Clear Token** and **Delete Slot**. Confirmations default to No.
+Use an x64 PKCS#11 module matching the application architecture. Install/configure vendor dependencies first.
+Procenne uses its vendor module; the suite does not implement a replacement for that DLL.
+SoftHSM2 is an alternative software provider for real cryptographic testing. Obtain it from a trusted distribution;
+no vendor DLL is included in GitHub source or release assets.
 
-Virtual state persists in `~/.softhsm_studio/virtual_hsm_v2.json`. Uninstalling keeps this data. The app does not preconfigure or display a demo PIN.
+Use the same module and configuration in all three tools. In particular, `SOFTHSM2_CONF` selects the token store.
+If unset, installed tools create `%LOCALAPPDATA%\VirtualHsmStudio\softhsm\softhsm2.conf` and its token directory.
+Source runs preserve an existing repository `.hsm-data` directory, otherwise use the per-user location.
+A different configuration can show different tokens even when the DLL is identical.
+Virtual HSM demo state is separate, in `~/.softhsm_studio/virtual_hsm_v2.json` unless overridden.
 
-## Optional real HSM
+## Terminology
 
-Use **Providers → Choose module** and select a trusted x64 PKCS#11 DLL installed with your vendor client. Vendor DLLs and SoftHSM binaries are not bundled. Slot/token discovery and the isolated key workflow are available; persistent generic PKCS#11 sessions are not yet implemented. The UI displays unsupported capabilities explicitly. Token initialization is currently limited to SoftHSM; follow your vendor's administration workflow for other devices.
+- Slot: logical location exposed by the module. Its numeric ID need not be small or sequential.
+- Token: named security container associated with a slot. It contains objects and PIN policy.
+- USER PIN: access to user operations, including authorized signing.
+- SO/administrator PIN: token administration; not the PIN to enter in the signing dialog.
+- Session: connection used to operate on a token. Simulator session controls are separate from short-lived hardware operations.
 
-If SoftHSM has no externally configured `SOFTHSM2_CONF`, an installed build uses `%LOCALAPPDATA%\VirtualHsmStudio\softhsm`. Existing source checkouts retain their existing `.hsm-data` location.
+Studio provides demo slot administration; Key Manager handles key generation; Sign & Verify consumes existing keys.
+No slot/token creation or deletion is performed by the signing app.
 
-## Build from source
+## Troubleshooting
 
-Use x64 Python 3.12 and install `requirements-dev.txt`. Install or extract the official NSIS 3.13 compiler, then run:
+| Symptom | Action |
+| --- | --- |
+| Download ZIP contains no EXE | Use release Assets, not Code → Download ZIP or the automatic source archives. |
+| Missing DLL / HsmWorker | Extract or reinstall the full distribution. Do not mix versions of _internal and EXEs. |
+| No tokens | Check module configuration and initialize a token using Studio (SoftHSM2) or vendor tooling. |
+| No RSA signing keys | Check the selected token and USER PIN; create an RSA key pair and ensure CKA_SIGN is enabled. AES keys are not listed. |
+| PIN failure | Stop repeated attempts and check token policy. No automatic PIN retry is implemented. |
+| INVALID signature | Choose the exact original bytes, matching .sig and public .pem. File names do not establish key identity. |
+| Working never finishes in an old build | Update all files to beta.2; the QDialog finished-signal collision is fixed. |
+| pip reports missing long PySide6 paths | Create the environment at `%USERPROFILE%\hsm-env`; see README. |
+| PowerShell rejects a folder path | Quote it with `Set-Location -LiteralPath 'full path'`. |
 
-```powershell
-python -m compileall src tests
-python -m pytest -q
-python tools/build_windows.py --makensis 'C:/path/to/nsis-3.13/makensis.exe'
-```
-
-Outputs:
-
-- `dist/VirtualHsmStudio/`: portable directory; copy the entire directory.
-- `dist/installer/VirtualHsmStudio-0.4.0-beta.1-Setup.exe`: installer.
-
-The GUI is windowed; a separate console worker preserves stdin/stdout for isolated PKCS#11 operations. PINs travel through pipes, not process arguments. Application files and persistent token data remain separate. The uninstaller removes only files listed in the generated bundle manifest.
-
-## POC feedback
-
-Record Windows version, app version, provider type, exact action, expected result, and observed result. Include a screenshot if useful. Never include PINs, credentials, private key material, or production token data.
+The UI clears PIN fields after requests; it does not remember PINs. Do not include PINs or private keys in screenshots or issue reports.

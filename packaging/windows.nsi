@@ -3,7 +3,7 @@ Unicode true
 !include "x64.nsh"
 !include "LogicLib.nsh"
 !define PRODUCT "Virtual HSM Studio"
-!define VERSION "0.4.0-beta.1"
+!define VERSION "0.4.0-beta.2"
 Name "${PRODUCT} ${VERSION}"
 OutFile "..\dist\installer\VirtualHsmStudio-${VERSION}-Setup.exe"
 InstallDir "$LOCALAPPDATA\Programs\VirtualHsmStudio"

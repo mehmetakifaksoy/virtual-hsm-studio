@@ -18,9 +18,16 @@ def main() -> int:
     app.setOrganizationName('VirtualHsmStudio')
     app.setApplicationVersion(__version__)
     app.setStyleSheet(APP_STYLESHEET)
-    window = MainWindow(tool=args.tool)
+    if args.tool == 'key-manager':
+        from softhsm_studio.key_manager import KeyManagerWindow
+        window = KeyManagerWindow()
+    else:
+        window = MainWindow(tool=args.tool)
     window.show()
     if args.smoke_test:
-        from softhsm_studio.smoke import run_smoke
-        QTimer.singleShot(100, lambda: run_smoke(window, app))
+        if args.tool == 'key-manager':
+            QTimer.singleShot(300, window.close)
+        else:
+            from softhsm_studio.smoke import run_smoke
+            QTimer.singleShot(100, lambda: run_smoke(window, app))
     return app.exec()

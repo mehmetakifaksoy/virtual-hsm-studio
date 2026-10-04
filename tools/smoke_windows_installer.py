@@ -17,7 +17,7 @@ except FileNotFoundError:
     pass
 if install.exists():
     raise SystemExit('Test destination already exists; choose a fresh directory.')
-setup=root/'dist/installer/VirtualHsmStudio-0.4.0-beta.1-Setup.exe'
+setup=root/'dist/installer/VirtualHsmStudio-0.4.0-beta.2-Setup.exe'
 # NSIS requires the final /D path to be unquoted, including paths with spaces.
 subprocess.run(f'"{setup}" /S /D={install}',timeout=120,check=True)
 assert (install/'VirtualHsmStudio.exe').is_file()

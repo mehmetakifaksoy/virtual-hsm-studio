@@ -1,68 +1,43 @@
 # Architecture
 
-SoftHSM Studio uses a provider architecture so the GUI is independent of any specific HSM implementation.
+The suite has three independent PySide6 entry points:
 
-```text
-Presentation (PySide6)
-  ├── Dashboard
-  ├── Providers
-  ├── Slots
-  └── Sessions
-        |
-        v
-Application Service
-        |
-        v
-Domain HsmProvider Port
-      /               \
-     v                 v
-VirtualHsmProvider   Pkcs11ModuleProvider
-     |                 |
-JsonStateStore       subprocess
-                       |
-                       v
-                  PKCS#11 Worker
-                       |
-                       v
-                 Vendor DLL/SO
-```
+- `softhsm_studio`: modular Home, Connections, Slots and Sessions console.
+- `softhsm_studio.key_manager`: initialized-token selection and a key management dialog.
+- `softhsm_studio.sign_app`: file signing and independent public-key verification.
 
-## Layers
+`HsmService` owns provider selection and delegates to domain capability interfaces.
+`VirtualHsmProvider` persists simulator metadata. `Pkcs11ModuleProvider` discovers external modules in isolated workers.
+Simulator capabilities do not imply equivalent hardware-adapter support. Persistent hardware sessions are not exposed by the console adapter yet.
 
-### Domain
+## Worker boundaries
 
-Contains immutable public models, controlled exceptions, and provider interfaces. It has no GUI, filesystem, subprocess, or PKCS#11 dependency.
+`HsmWorker.exe` dispatches snapshot, keys and sign operations. Source runs use the equivalent Python modules.
+Native modules are loaded in the worker; connection and key/sign operations are dispatched from GUI QThreads.
+JSON requests go through stdin (PINs are not process arguments). Replies contain metadata, public keys or signatures, never private-key values.
+Workers suppress vendor exception text on key/sign failure. Timeout does not imply a mutating HSM operation was rolled back.
+Do not automatically repeat operations after an uncertain result.
 
-### Application
+Verification uses cryptography locally without a PKCS#11 connection. Signatures use explicit SHA256_RSA_PKCS;
+key selection requires a unique RSA private/public pair with matching CKA_ID and a signing-capable private key.
+A produced signature is checked against its public key before it is returned.
 
-`HsmService` owns the active provider and exposes provider-independent operations to the presentation layer.
+## Presentation
 
-### Infrastructure
+Console pages and shared cards live under presentation/pages and presentation/widgets.
+Slot/token and session action handlers are separated from the main window.
+Demo administration and technical details are collapsed by default. Slot pages contain no key-generation action.
+Key Manager and signing dialogs guard against closure while a worker runs and clear PIN fields after submission.
+The signing completion callback has a distinct name from QDialog.finished(int).
 
-`VirtualHsmProvider` persists development state to JSON. `Pkcs11ModuleProvider` invokes a short-lived isolated worker for native module inspection.
+## Distribution
 
-### Presentation
+Three PyInstaller specifications produce independent directories with GUI EXE, worker EXE and _internal.
+`tools/build_release.py` builds these, includes licenses/guides, creates per-user NSIS installers and portable ZIPs,
+and writes checksums. Build PATH is limited to Python and Windows directories to avoid unrelated ICU/Qt DLL capture.
+Applications share an explicitly selected SoftHSM configuration, not an in-memory process session.
 
-The PySide6 console is split into Dashboard, Providers, Slots, and Sessions
-pages. Each page owns its widgets and presentation state; `MainWindow`
-coordinates navigation and delegates provider actions to `HsmService`.
-Potentially slow provider connect/refresh calls execute in `QThread` workers.
-Session controls are shown only when the active provider implements the
-optional session capability. Providers that do not implement a capability
-remain usable for the operations they do support.
+## Still planned
 
-## Why the PKCS#11 worker is separate
-
-Native PKCS#11 libraries execute inside the process that loads them. A vendor module can block, crash, initialize global state, or conflict with another PKCS#11 implementation. SoftHSM Studio therefore performs discovery in a separate process and exchanges only JSON snapshots with the GUI process.
-
-## Planned next adapters/features
-
-- PKCS#11 mechanism browser
-- Object explorer
-- AES key generation
-- RSA/EC key pair generation
-- Certificate objects
-- CKA_ID / CKA_LABEL / CKA_SENSITIVE / CKA_EXTRACTABLE views
-- Sign/verify and encrypt/decrypt test console
-- SoftHSM2 native administration adapter
-- Vendor-specific provider extensions without GUI coupling
+Hardware-provider pilot, richer mechanism/attribute views, key wrapping policy, certificate workflows,
+additional signing algorithms and long-lived hardware session management.
