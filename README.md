@@ -23,9 +23,7 @@ Keep `HsmWorker.exe` and `_internal` next to the GUI executable. Do not run from
 
 - **Virtual HSM**: local JSON simulator for slot/token/session demos. Key operations produce metadata, not usable cryptographic keys; it cannot sign.
 - **SoftHSM2**: a separate software PKCS#11 implementation that can generate real keys and sign. Install its matching x64 module separately.
-- **Vendor HSM**: choose the vendor's x64 PKCS#11 DLL, for example Procenne's module. Vendor client configuration and hardware access are required; Procenne has not been hardware-validated in this POC.
-
-Vendor DLLs and private token stores are not bundled or committed. Only load a module you trust. A DLL is selected explicitly on each launch.
+  
 
 ## First signing test
 
