@@ -46,17 +46,8 @@ class MainWindow(SlotActions, SessionActions, QMainWindow):
         self._render_slots(self.slots)
         self._set_status(self._last_status)
 
-        bundled_module = (
-            Path(__file__).resolve().parents[3]
-            / "tools"
-            / "softhsm2"
-            / "SoftHSM2"
-            / "lib"
-            / "softhsm2-x64.dll"
-        )
-        last_module = settings().value("module", "") or str(bundled_module)
-        if last_module and Path(last_module).is_file():
-            QTimer.singleShot(0, lambda: self._load_module(Path(last_module)))
+        # Starting a POC must never load a previously used vendor DLL implicitly.
+        # The user explicitly chooses Virtual HSM or a module on each launch.
 
     def _build_ui(self) -> None:
         build_console(self)
@@ -149,6 +140,9 @@ class MainWindow(SlotActions, SessionActions, QMainWindow):
         info = self.service.provider_info
         connected = not isinstance(self.service.provider, DisconnectedProvider)
         kind = "Virtual" if info.kind is ProviderKind.VIRTUAL else "PKCS#11"
+        self.provider_badge.setProperty("connected", connected)
+        self.provider_badge.style().unpolish(self.provider_badge)
+        self.provider_badge.style().polish(self.provider_badge)
         self.provider_badge.setText(f"{kind} · Connected" if connected else "Not connected")
         self.provider_title.setText(info.name if connected else "HSM Management Console")
         parts = [part for part in (info.manufacturer, info.version, info.module_path) if part]
@@ -214,6 +208,7 @@ class MainWindow(SlotActions, SessionActions, QMainWindow):
             busy,
         )
         self.sessions_page.set_busy(busy, self.service.supports_sessions)
+        self.dashboard_page.set_busy(busy)
         self._set_status(message)
         self._update_virtual_buttons()
         if busy:

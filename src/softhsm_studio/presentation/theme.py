@@ -59,3 +59,33 @@ QStatusBar { color: #53677f; }
 QToolTip { background-color: #173456; color: white; border: 1px solid #345a85; padding: 6px; }
 QSplitter::handle { background-color: #e3eaf3; }
 """
+
+
+APP_STYLESHEET += r"""
+QWidget { font-size: 10pt; background-color: #f4f6fa; color: #18263a; }
+QFrame#Sidebar { background-color: #13233d; border: none; border-radius: 14px; }
+QLabel#BrandMark { color: #8caef7; font-size: 10pt; font-weight: 700; padding-bottom: 10px; }
+QLabel#AppTitle { color: #ffffff; font-size: 22pt; font-weight: 700; }
+QLabel#SidebarMuted { color: #a8b8cf; font-size: 9pt; }
+QPushButton#NavigationButton { background-color: transparent; color: #b7c7df; border: none; padding: 13px 16px; border-radius: 8px; }
+QPushButton#NavigationButton:hover { background-color: #223a5c; color: white; }
+QPushButton#NavigationButton:checked { background-color: #315fce; color: white; font-weight: 700; }
+QFrame#Panel { background-color: #f4f6fa; border: none; }
+QLabel#PageTitle { font-size: 21pt; font-weight: 700; color: #172942; }
+QFrame#ActionCard, QFrame#MetricCard { background-color: white; border: 1px solid #dee5ee; border-radius: 12px; }
+QFrame#WelcomeCard { background-color: #eaf0ff; border: 1px solid #d1ddfa; border-radius: 12px; }
+QLabel#Eyebrow { font-size: 9pt; font-weight: 700; color: #567197; }
+QLabel#CardTitle { font-size: 15pt; font-weight: 700; color: #182e50; }
+QLabel#MetricValue { font-size: 22pt; font-weight: 700; color: #254b91; }
+QLabel#Feedback { background-color: white; border: 1px solid #dfe6ef; border-radius: 8px; padding: 9px; color: #53677f; }
+QLabel#ProviderBadge { padding: 6px 10px; font-size: 9pt; }
+QPushButton { padding: 10px 15px; border-radius: 7px; }
+QCheckBox { background: transparent; spacing: 8px; }
+"""
+
+APP_STYLESHEET += r"""
+QLabel { background: transparent; }
+QLineEdit, QComboBox { background: white; }
+QScrollArea { background: transparent; border: none; }
+QLabel#ProviderBadge[connected="false"] { color: #53677f; background: #e7edf5; border-color: #d4deea; }
+"""

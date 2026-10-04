@@ -12,6 +12,7 @@ from PySide6.QtWidgets import (
 )
 
 from softhsm_studio.domain.models import ProviderInfo
+from ..widgets.cards import ActionCard
 
 
 class ProvidersPage(QWidget):
@@ -32,19 +33,24 @@ class ProvidersPage(QWidget):
         description.setWordWrap(True)
         layout.addWidget(description)
 
-        actions = QHBoxLayout()
-        self.load_module_button = QPushButton("Load PKCS#11 Module…")
-        self.load_module_button.setObjectName("PrimaryButton")
-        self.load_module_button.clicked.connect(self.load_module_requested)
-        self.virtual_button = QPushButton("Use Virtual HSM")
+        cards = QHBoxLayout()
+        virtual = ActionCard("RECOMMENDED FOR POC", "Virtual HSM",
+            "A persistent local simulator. Explore slots, tokens and sessions without hardware. Key generation creates metadata only.")
+        self.virtual_button = QPushButton("Open Virtual HSM")
+        self.virtual_button.setObjectName("PrimaryButton")
         self.virtual_button.clicked.connect(self.virtual_provider_requested)
-        self.refresh_button = QPushButton("Refresh Provider")
+        virtual.content.addWidget(self.virtual_button)
+        module = ActionCard("BRING YOUR OWN HSM", "PKCS#11 module",
+            "Connect a vendor module matching the application's architecture. Available operations depend on the provider.")
+        self.load_module_button = QPushButton("Choose module…")
+        self.load_module_button.clicked.connect(self.load_module_requested)
+        module.content.addWidget(self.load_module_button)
+        cards.addWidget(virtual)
+        cards.addWidget(module)
+        layout.addLayout(cards)
+        self.refresh_button = QPushButton("Refresh connected provider")
         self.refresh_button.clicked.connect(self.refresh_requested)
-        actions.addWidget(self.load_module_button)
-        actions.addWidget(self.virtual_button)
-        actions.addWidget(self.refresh_button)
-        actions.addStretch(1)
-        layout.addLayout(actions)
+        layout.addWidget(self.refresh_button)
 
         form = QFormLayout()
         self.name = self._value_field()

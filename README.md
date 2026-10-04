@@ -1,4 +1,4 @@
-# SoftHSM Studio 0.2.0
+# Virtual HSM Studio 0.4.0 beta 1
 
 A clean, slot-oriented desktop HSM simulator and PKCS#11 module explorer.
 
@@ -28,7 +28,11 @@ The GUI never depends directly on a specific HSM vendor. New provider adapters c
 - Capability-aware session opening, login, logout and close workflows
 - Unit tests for core domain and virtual HSM behavior
 
-## Windows setup
+## Windows POC installer
+
+The Windows POC build includes Python and Qt. Start with **Start Virtual HSM**; real PKCS#11 modules are optional. See [Windows POC installation, walkthrough and build instructions](docs/WINDOWS_POC.md).
+
+## Windows setup (from source)
 
 Recommended: 64-bit Python 3.11 or 3.12.
 

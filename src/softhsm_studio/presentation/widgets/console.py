@@ -2,8 +2,9 @@
 from functools import partial
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (QFrame, QHBoxLayout, QLabel, QPushButton,
-                              QStackedWidget, QVBoxLayout, QWidget)
+                              QStackedWidget, QVBoxLayout, QWidget, QScrollArea)
 from ..pages import DashboardPage, ProvidersPage, SessionsPage, SlotsPage
+from softhsm_studio import __version__
 
 def build_console(self) -> None:
     root = QWidget()
@@ -13,16 +14,19 @@ def build_console(self) -> None:
 
     sidebar = QFrame()
     sidebar.setObjectName("Sidebar")
-    sidebar.setFixedWidth(235)
+    sidebar.setFixedWidth(220)
     side_layout = QVBoxLayout(sidebar)
     side_layout.setContentsMargins(18, 18, 18, 18)
     side_layout.setSpacing(10)
 
-    title = QLabel("Virtual HSM Studio")
+    brand = QLabel("HSM / STUDIO")
+    brand.setObjectName("BrandMark")
+    side_layout.addWidget(brand)
+    title = QLabel("Virtual HSM\nStudio")
     title.setObjectName("AppTitle")
     title.setWordWrap(True)
-    subtitle = QLabel("HSM management console")
-    subtitle.setObjectName("Muted")
+    subtitle = QLabel("MANAGEMENT CONSOLE")
+    subtitle.setObjectName("SidebarMuted")
     subtitle.setWordWrap(True)
     side_layout.addWidget(title)
     side_layout.addWidget(subtitle)
@@ -41,9 +45,12 @@ def build_console(self) -> None:
     warning = QLabel(
         "Virtual mode is for development and testing. It is not a hardware security boundary."
     )
-    warning.setObjectName("Muted")
+    warning.setObjectName("SidebarMuted")
     warning.setWordWrap(True)
     side_layout.addWidget(warning)
+    version = QLabel(f"POC PREVIEW  ·  {__version__}")
+    version.setObjectName("SidebarMuted")
+    side_layout.addWidget(version)
 
     content = QFrame()
     content.setObjectName("Panel")
@@ -86,7 +93,11 @@ def build_console(self) -> None:
         self.slots_page,
         self.sessions_page,
     ):
-        self.page_stack.addWidget(page)
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setFrameShape(QFrame.Shape.NoFrame)
+        scroll.setWidget(page)
+        self.page_stack.addWidget(scroll)
     content_layout.addWidget(self.page_stack, 1)
 
     root_layout.addWidget(sidebar)
@@ -95,6 +106,8 @@ def build_console(self) -> None:
     self.statusBar().showMessage(self._last_status)
 
     self.dashboard_page.navigate_requested.connect(self._navigate)
+    self.dashboard_page.virtual_provider_requested.connect(self._switch_to_virtual)
+    self.dashboard_page.load_module_requested.connect(self._choose_module)
     self.providers_page.load_module_requested.connect(self._choose_module)
     self.providers_page.virtual_provider_requested.connect(self._switch_to_virtual)
     self.providers_page.refresh_requested.connect(self._refresh_provider)
