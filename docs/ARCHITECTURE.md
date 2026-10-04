@@ -4,6 +4,10 @@ SoftHSM Studio uses a provider architecture so the GUI is independent of any spe
 
 ```text
 Presentation (PySide6)
+  ├── Dashboard
+  ├── Providers
+  ├── Slots
+  └── Sessions
         |
         v
 Application Service
@@ -39,7 +43,13 @@ Contains immutable public models, controlled exceptions, and provider interfaces
 
 ### Presentation
 
-PySide6 widgets display slot/token state and invoke application operations. Potentially slow provider connect/refresh calls execute in `QThread` workers.
+The PySide6 console is split into Dashboard, Providers, Slots, and Sessions
+pages. Each page owns its widgets and presentation state; `MainWindow`
+coordinates navigation and delegates provider actions to `HsmService`.
+Potentially slow provider connect/refresh calls execute in `QThread` workers.
+Session controls are shown only when the active provider implements the
+optional session capability. Providers that do not implement a capability
+remain usable for the operations they do support.
 
 ## Why the PKCS#11 worker is separate
 
@@ -47,7 +57,6 @@ Native PKCS#11 libraries execute inside the process that loads them. A vendor mo
 
 ## Planned next adapters/features
 
-- Session/login model
 - PKCS#11 mechanism browser
 - Object explorer
 - AES key generation
