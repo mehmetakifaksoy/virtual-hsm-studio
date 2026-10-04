@@ -43,15 +43,15 @@ def test_console_navigation_has_all_management_pages(monkeypatch) -> None:
     try:
         assert window.page_stack.count() == 4
         assert [button.text() for button in window.navigation] == [
-            "Dashboard",
-            "Providers",
+            "Home",
+            "Connections",
             "Slots",
             "Sessions",
         ]
         for index, button in enumerate(window.navigation):
             button.click()
             assert window.page_stack.currentIndex() == index
-        assert "does not support session management" in window.sessions_page.message.text()
+        assert "not available through this application adapter" in window.sessions_page.message.text()
     finally:
         window.close()
         app.processEvents()
@@ -105,7 +105,7 @@ def test_poc_starts_virtual_provider_from_dashboard(monkeypatch, tmp_path):
         assert not window._threads
         assert window.service.supports_virtual_admin
         assert not window.dashboard_page.welcome.isVisible()
-        assert window.dashboard_page.next_button.text() == 'Initialize your first token'
+        assert window.dashboard_page.next_button.text() == 'Prepare a token'
         window.dashboard_page.next_button.click()
         assert window.page_stack.currentIndex() == 2
     finally:
@@ -113,3 +113,21 @@ def test_poc_starts_virtual_provider_from_dashboard(monkeypatch, tmp_path):
             worker.wait(5000)
         app.processEvents()
         window.close()
+
+
+def test_demo_administration_is_hidden_for_external_modules():
+    from softhsm_studio.presentation.pages.slots import SlotsPage
+    app = QApplication.instance() or QApplication([])
+    page = SlotsPage()
+    page.set_provider_mode(True, True, True)
+    assert page.demo_admin.isHidden()
+    page.advanced_button.click()
+    assert not page.demo_admin.isHidden()
+    assert page.initialize_button.text() == "Prepare Demo Token"
+    page.set_provider_mode(False, True, False)
+    assert page.demo_admin.isHidden()
+    assert page.initialize_button.isHidden()
+    assert "not implemented" in page.guidance.text()
+    page.set_provider_mode(False, True, True)
+    assert not page.initialize_button.isHidden()
+    page.close()

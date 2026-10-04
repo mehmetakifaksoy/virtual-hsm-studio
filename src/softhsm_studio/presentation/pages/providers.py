@@ -25,7 +25,7 @@ class ProvidersPage(QWidget):
         layout = QVBoxLayout(self)
         layout.setSpacing(16)
 
-        heading = QLabel("Providers")
+        heading = QLabel("Connections")
         heading.setObjectName("PageTitle")
         layout.addWidget(heading)
         description = QLabel("Connect to a PKCS#11 module or use the development-only Virtual HSM.")
@@ -34,15 +34,15 @@ class ProvidersPage(QWidget):
         layout.addWidget(description)
 
         cards = QHBoxLayout()
-        virtual = ActionCard("RECOMMENDED FOR POC", "Virtual HSM",
+        virtual = ActionCard("LOCAL DEMO · NO HARDWARE", "Virtual HSM",
             "A persistent local simulator. Explore slots, tokens and sessions without hardware. Key generation creates metadata only.")
-        self.virtual_button = QPushButton("Open Virtual HSM")
+        self.virtual_button = QPushButton("Start Demo")
         self.virtual_button.setObjectName("PrimaryButton")
         self.virtual_button.clicked.connect(self.virtual_provider_requested)
         virtual.content.addWidget(self.virtual_button)
-        module = ActionCard("BRING YOUR OWN HSM", "PKCS#11 module",
+        module = ActionCard("REAL HSM / EXTERNAL PROVIDER", "Vendor PKCS#11 module",
             "Connect a vendor module matching the application's architecture. Available operations depend on the provider.")
-        self.load_module_button = QPushButton("Choose module…")
+        self.load_module_button = QPushButton("Connect HSM…")
         self.load_module_button.clicked.connect(self.load_module_requested)
         module.content.addWidget(self.load_module_button)
         cards.addWidget(virtual)
@@ -95,7 +95,7 @@ class ProvidersPage(QWidget):
             ("Mechanisms", service.supports_mechanisms),
             ("Virtual administration", service.supports_virtual_admin),
         )
-        self.capabilities.setText("Capabilities · " + " · ".join(
-            f"{name}: {'available' if supported else 'not supported'}"
+        self.capabilities.setText("Application features · " + " · ".join(
+            f"{name}: {'available' if supported else 'not available in this application'}"
             for name, supported in capabilities
         ))

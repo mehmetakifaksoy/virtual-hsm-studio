@@ -24,7 +24,7 @@ from .workers import ProviderConnectThread, ProviderRefreshThread
 
 class MainWindow(SlotActions, SessionActions, QMainWindow):
     MODULE_SUFFIXES = {".dll", ".so", ".dylib"}
-    PAGE_NAMES = ("Dashboard", "Providers", "Slots", "Sessions")
+    PAGE_NAMES = ("Home", "Connections", "Slots", "Sessions")
 
     def __init__(self, tool: str = "admin") -> None:
         super().__init__()

@@ -10,6 +10,7 @@ readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
   "PySide6>=6.8,<7",
+  "cryptography>=44,<51",
   "python-pkcs11>=0.10,<0.11",
 ]
 

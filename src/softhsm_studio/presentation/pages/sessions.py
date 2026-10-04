@@ -158,7 +158,7 @@ class SessionsPage(QWidget):
             f"{len(sessions)} active session{'s' if len(sessions) != 1 else ''}."
             if supported and available_slots
             else "Initialize a token in Slots before opening a session." if supported
-            else "The active provider does not support session management."
+            else "Session management is not available through this application adapter. This does not mean your HSM lacks PKCS#11 session support."
         )
         self.set_busy(busy, supported)
         self._update_actions()

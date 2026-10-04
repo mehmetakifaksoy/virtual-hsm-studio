@@ -86,28 +86,67 @@ Virtual HSM mode is a simulator, not a hardware security module. It is suitable 
 
 See `SECURITY.md` and `docs/ARCHITECTURE.md`.
 
-## Separate DLL tools
+## Three separate applications
 
-Run `Start Admin Tool.cmd` to load the PKCS#11 DLL and initialize a free
-SoftHSM token with its label, SO PIN and USER PIN. Run `Start Key Manager.cmd`
-separately to select that token, view keys and generate AES/RSA keys.
-The tools remember the same DLL; no PIN is saved in settings.
+| Application | Run from source | Purpose |
+| --- | --- | --- |
+| HSM Studio | `python -m softhsm_studio` | Connections, slots, tokens and sessions |
+| Key Manager | `python -m softhsm_studio.key_manager` | List key metadata and generate supported AES/RSA keys |
+| Sign & Verify | `python -m softhsm_studio.sign_app` | Sign files with HSM RSA keys, export public keys and verify independently |
 
-The bundled local test DLL is
-`tools/softhsm2/SoftHSM2/lib/softhsm2-x64.dll` (SoftHSM 2.5.0 portable,
-https://github.com/disig/SoftHSM2-for-Windows). Its licenses remain in the package.
-Binary packages and token stores are ignored by Git. In a fresh checkout obtain
-that portable package and extract it under `tools/softhsm2`.
+Install dependencies with `python -m pip install -e .[dev]`.
 
-Unless `SOFTHSM2_CONF` already points to your own configuration, both tools use
-`.hsm-data/softhsm2.conf` and `.hsm-data/tokens`. They create real software-HSM
-keys through the DLL; the old JSON metadata simulator is not used by these tools.
-SoftHSM exposes an uninitialized slot; initializing its token assigns a slot ID
-and exposes another free slot. Generic PKCS#11 does not provide CreateSlot.
-Vendor hardware setup remains in the vendor administration software.
+Studio separates local demo controls from external PKCS#11 providers. Slot administration
+contains no key-generation controls. Advanced demo actions and technical details start collapsed.
+The local Virtual HSM stores simulation metadata only and cannot produce cryptographic signatures.
+Use SoftHSM2 or an actual HSM vendor module for signing. Procenne hardware has not been validated.
+Applications never automatically load a previously selected DLL.
 
-Run `Test DLL Workflow.cmd` to compile source and run tests including an isolated
-DLL workflow: initialize token, generate AES and RSA objects, reopen and verify
-persistence. This integration test uses a temporary token directory, separate
-from your application tokens. Tests have not been run in the restricted agent
-runtime because the virtual-environment interpreter cannot execute there.
+### Sign and verify a file
+
+1. Initialize a token using Studio (SoftHSM2) or the vendor administration tool.
+2. Generate an RSA key pair in Key Manager on that token.
+3. In Sign & Verify, connect the same module, select the token and open signing.
+4. Enter USER PIN and load RSA signing keys. Select the key and document.
+5. Re-enter USER PIN and sign. Save the public key as PEM and the detached signature as `.sig`.
+6. Choose Verify File Signature and select the original document, signature and public key.
+
+The POC implements RSA PKCS#1 v1.5 with SHA-256 and a 16 MiB document limit.
+Public keys may be exported; private keys stay on the HSM. Key wrapping, private-key export,
+certificate trust validation, PDF/PAdES signing and timestamps are not implemented.
+Verification checks document/signature/key consistency, not the identity of the key owner.
+PINs travel to isolated workers through stdin, never command-line arguments or log files.
+The signing dialog clears the PIN after each request and does not automatically retry login.
+
+### Windows builds
+
+```powershell
+python tools/build_windows.py
+python tools/build_key_manager.py
+python tools/build_sign_verify.py
+```
+
+Outputs are `dist/VirtualHsmStudio`, `dist/HsmKeyManager` and `dist/HsmSignVerify`.
+Each directory contains its own GUI executable, `HsmWorker.exe` and `_internal` dependencies.
+Keep the entire directory together; copying only the EXE is insufficient.
+Builds sanitize PATH to avoid collecting unrelated Qt/ICU dependencies.
+Vendor DLLs, local token stores and built binaries are excluded from Git.
+
+Set `SOFTHSM2_CONF` to use an explicit SoftHSM2 token store. Otherwise the packaged apps use
+`%LOCALAPPDATA%/VirtualHsmStudio/softhsm`; source runs preserve an existing `.hsm-data`
+store or use the same per-user location. All tools must use the same configuration to see the same tokens.
+
+### Validation
+
+```powershell
+python -m compileall src tests
+python -m pytest -q
+python -m softhsm_studio --smoke-test
+python -m softhsm_studio.key_manager --smoke-test
+python -m softhsm_studio.sign_app --smoke-test
+```
+
+Set `SOFTHSM_TEST_MODULE` to a SoftHSM2 DLL/library to enable integration tests; they use
+isolated temporary token stores. Signing tests cover real RSA signatures, public-key export,
+altered documents, invalid signatures and wrong public keys. GUI regression tests cover the
+signing-key loading callback, including the Qt dialog signal collision fix.

@@ -89,3 +89,28 @@ QLineEdit, QComboBox { background: white; }
 QScrollArea { background: transparent; border: none; }
 QLabel#ProviderBadge[connected="false"] { color: #53677f; background: #e7edf5; border-color: #d4deea; }
 """
+
+
+# Shared visual polish for the light console and dark navigation.
+APP_STYLESHEET += r"""
+QFrame#Sidebar { background: #14243b; border-radius: 16px; }
+QLabel#AppTitle { font-size: 19pt; }
+QLabel#PageTitle { font-size: 23pt; }
+QLabel#CardTitle { font-size: 16pt; }
+QFrame#ActionCard, QFrame#MetricCard { border-color: #e0e6ee; border-radius: 14px; }
+QFrame#WelcomeCard { background: #ffffff; border: 1px solid #d5e0f0; border-radius: 14px; }
+QPushButton { min-height: 22px; padding: 10px 18px; border-radius: 8px; }
+QPushButton#NavigationButton { padding: 14px 18px; }
+QPushButton#NavigationButton:checked { background: #285bcc; }
+QPushButton#PrimaryButton { background: #285bcc; border-color: #285bcc; }
+QPushButton#PrimaryButton:hover { background: #204cad; border-color: #204cad; }
+QPushButton:checked { background: #eaf0fb; border-color: #9bb4e4; }
+QGroupBox { background: #ffffff; border: 1px solid #dfe6ef; border-radius: 10px; margin-top: 16px; padding: 18px 12px 12px; }
+QGroupBox::title { subcontrol-origin: margin; left: 14px; padding: 0 6px; color: #50657f; }
+QHeaderView::section { background: #f0f4f9; padding: 13px; color: #526781; }
+QTableWidget { alternate-background-color: #f8fafc; selection-background-color: #e5edfc; }
+QScrollBar:vertical { background: #edf1f6; width: 10px; margin: 0; }
+QScrollBar::handle:vertical { background: #b8c5d6; border-radius: 5px; min-height: 28px; }
+QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical { height: 0; }
+QLineEdit:read-only { background: #f8fafc; border-color: #e2e8f0; }
+"""

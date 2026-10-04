@@ -2,19 +2,10 @@
 from PySide6.QtWidgets import QDialog, QMessageBox
 from softhsm_studio.infrastructure.pkcs11 import Pkcs11ModuleProvider
 from ..dialogs import CreateSlotDialog, InitializeTokenDialog
-from ..key_dialog import KeyOperation, SlotKeysDialog
+from ..key_dialog import KeyOperation
 
 
 class SlotActions:
-    def _open_slot_keys(self) -> None:
-        slot = self._selected_slot()
-        if self._busy or slot is None:
-            return
-        if slot.token is None or not slot.token.initialized:
-            self._show_error("Initialize a token in this slot before managing keys.")
-            return
-        SlotKeysDialog(self.service, slot, self).exec()
-
     def _create_slot(self) -> None:
         dialog = CreateSlotDialog(self)
         if dialog.exec() != QDialog.DialogCode.Accepted:
@@ -144,8 +135,10 @@ class SlotActions:
             and (selected.token is None or not selected.token.initialized)
             and (is_virtual_admin or self.service.supports_token_initialization)
         )
-        initialized = (
-            selected is not None and selected.token is not None and selected.token.initialized
+        self.slots_page.set_provider_mode(
+            is_virtual_admin,
+            is_virtual_admin or isinstance(self.service.provider, Pkcs11ModuleProvider),
+            self.service.supports_token_initialization,
         )
         self.slots_page.set_action_availability(
             can_create=is_virtual_admin and not self._busy,
@@ -157,5 +150,4 @@ class SlotActions:
                 and not self._busy
             ),
             can_delete=is_virtual_admin and selected is not None and not self._busy,
-            can_manage_keys=initialized and self.service.supports_key_management and not self._busy,
         )

@@ -9,6 +9,7 @@ import tempfile
 parser=argparse.ArgumentParser()
 parser.add_argument('bundle',type=Path)
 parser.add_argument('--module',type=Path)
+parser.add_argument('--executable', default='VirtualHsmStudio.exe')
 args=parser.parse_args()
 bundle=args.bundle.resolve()
 env=os.environ.copy()
@@ -18,11 +19,11 @@ env['QT_QPA_PLATFORM']='offscreen'
 flags=getattr(subprocess,'CREATE_NO_WINDOW',0)
 report=bundle.parent/'smoke-report.json'
 env['SOFTHSM_STUDIO_SMOKE_REPORT']=str(report)
-result=subprocess.run([str(bundle/'VirtualHsmStudio.exe'),'--smoke-test'],env=env,timeout=45,creationflags=flags)
+result=subprocess.run([str(bundle/args.executable),'--smoke-test'],env=env,timeout=45,creationflags=flags)
 if result.returncode:
     diagnostic=report.read_text(encoding='utf-8') if report.exists() else 'No smoke diagnostic; check executable startup.'
     raise RuntimeError(f'GUI smoke failed: {result.returncode}; {diagnostic}')
-print('Packaged GUI and Virtual HSM smoke: passed')
+print('Packaged GUI smoke: passed')
 worker=str(bundle/'HsmWorker.exe')
 with tempfile.TemporaryDirectory(prefix='hsm-packaged-test-') as directory:
     root=Path(directory)

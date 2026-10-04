@@ -14,9 +14,9 @@ def build_console(self) -> None:
 
     sidebar = QFrame()
     sidebar.setObjectName("Sidebar")
-    sidebar.setFixedWidth(220)
+    sidebar.setFixedWidth(224)
     side_layout = QVBoxLayout(sidebar)
-    side_layout.setContentsMargins(18, 18, 18, 18)
+    side_layout.setContentsMargins(22, 24, 22, 24)
     side_layout.setSpacing(10)
 
     brand = QLabel("HSM / STUDIO")
@@ -55,7 +55,7 @@ def build_console(self) -> None:
     content = QFrame()
     content.setObjectName("Panel")
     content_layout = QVBoxLayout(content)
-    content_layout.setContentsMargins(18, 18, 18, 18)
+    content_layout.setContentsMargins(22, 24, 22, 24)
     content_layout.setSpacing(12)
 
     header = QHBoxLayout()
@@ -76,11 +76,13 @@ def build_console(self) -> None:
     self.provider_detail.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
     self.provider_detail.setWordWrap(True)
     content_layout.addWidget(self.provider_detail)
+    self.provider_detail.hide()
 
     self.feedback = QLabel()
     self.feedback.setObjectName("Feedback")
     self.feedback.setWordWrap(True)
     content_layout.addWidget(self.feedback)
+    self.feedback.hide()
 
     self.dashboard_page = DashboardPage()
     self.providers_page = ProvidersPage()
@@ -116,7 +118,6 @@ def build_console(self) -> None:
     self.slots_page.initialize_token_requested.connect(self._initialize_token)
     self.slots_page.clear_token_requested.connect(self._clear_token)
     self.slots_page.delete_slot_requested.connect(self._delete_slot)
-    self.slots_page.manage_keys_requested.connect(self._open_slot_keys)
     self.sessions_page.refresh_requested.connect(self._refresh_sessions)
     self.sessions_page.open_session_requested.connect(self._open_session)
     self.sessions_page.close_session_requested.connect(self._close_session)
