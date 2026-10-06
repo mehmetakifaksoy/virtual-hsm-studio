@@ -32,12 +32,12 @@ class SlotKeysDialog(QDialog):
         self.resize(820, 620)
         layout = QVBoxLayout(self)
         title = QLabel(f"Keys in {slot.description or 'slot'}")
-        title.setObjectName('AppTitle')
+        title.setObjectName('PageTitle')
         layout.addWidget(title)
         help_text = QLabel(
             'SIMULATION: this provider creates metadata only, not usable cryptographic keys.'
             if service.supports_virtual_admin else
-            'Keys are generated and stored on your HSM. Private and secret keys are non-extractable.'
+            'New keys generated here are stored on the HSM with private and secret keys marked non-extractable.'
         )
         help_text.setWordWrap(True)
         layout.addWidget(help_text)

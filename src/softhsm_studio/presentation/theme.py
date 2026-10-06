@@ -59,3 +59,58 @@ QStatusBar { color: #53677f; }
 QToolTip { background-color: #173456; color: white; border: 1px solid #345a85; padding: 6px; }
 QSplitter::handle { background-color: #e3eaf3; }
 """
+
+
+APP_STYLESHEET += r"""
+QWidget { font-size: 10pt; background-color: #f4f6fa; color: #18263a; }
+QFrame#Sidebar { background-color: #13233d; border: none; border-radius: 14px; }
+QLabel#BrandMark { color: #8caef7; font-size: 10pt; font-weight: 700; padding-bottom: 10px; }
+QLabel#AppTitle { color: #ffffff; font-size: 22pt; font-weight: 700; }
+QLabel#SidebarMuted { color: #a8b8cf; font-size: 9pt; }
+QPushButton#NavigationButton { background-color: transparent; color: #b7c7df; border: none; padding: 13px 16px; border-radius: 8px; }
+QPushButton#NavigationButton:hover { background-color: #223a5c; color: white; }
+QPushButton#NavigationButton:checked { background-color: #315fce; color: white; font-weight: 700; }
+QFrame#Panel { background-color: #f4f6fa; border: none; }
+QLabel#PageTitle { font-size: 21pt; font-weight: 700; color: #172942; }
+QFrame#ActionCard, QFrame#MetricCard { background-color: white; border: 1px solid #dee5ee; border-radius: 12px; }
+QFrame#WelcomeCard { background-color: #eaf0ff; border: 1px solid #d1ddfa; border-radius: 12px; }
+QLabel#Eyebrow { font-size: 9pt; font-weight: 700; color: #567197; }
+QLabel#CardTitle { font-size: 15pt; font-weight: 700; color: #182e50; }
+QLabel#MetricValue { font-size: 22pt; font-weight: 700; color: #254b91; }
+QLabel#Feedback { background-color: white; border: 1px solid #dfe6ef; border-radius: 8px; padding: 9px; color: #53677f; }
+QLabel#ProviderBadge { padding: 6px 10px; font-size: 9pt; }
+QPushButton { padding: 10px 15px; border-radius: 7px; }
+QCheckBox { background: transparent; spacing: 8px; }
+"""
+
+APP_STYLESHEET += r"""
+QLabel { background: transparent; }
+QLineEdit, QComboBox { background: white; }
+QScrollArea { background: transparent; border: none; }
+QLabel#ProviderBadge[connected="false"] { color: #53677f; background: #e7edf5; border-color: #d4deea; }
+"""
+
+
+# Shared visual polish for the light console and dark navigation.
+APP_STYLESHEET += r"""
+QFrame#Sidebar { background: #14243b; border-radius: 16px; }
+QLabel#AppTitle { font-size: 19pt; }
+QLabel#PageTitle { font-size: 23pt; }
+QLabel#CardTitle { font-size: 16pt; }
+QFrame#ActionCard, QFrame#MetricCard { border-color: #e0e6ee; border-radius: 14px; }
+QFrame#WelcomeCard { background: #ffffff; border: 1px solid #d5e0f0; border-radius: 14px; }
+QPushButton { min-height: 22px; padding: 10px 18px; border-radius: 8px; }
+QPushButton#NavigationButton { padding: 14px 18px; }
+QPushButton#NavigationButton:checked { background: #285bcc; }
+QPushButton#PrimaryButton { background: #285bcc; border-color: #285bcc; }
+QPushButton#PrimaryButton:hover { background: #204cad; border-color: #204cad; }
+QPushButton:checked { background: #eaf0fb; border-color: #9bb4e4; }
+QGroupBox { background: #ffffff; border: 1px solid #dfe6ef; border-radius: 10px; margin-top: 16px; padding: 18px 12px 12px; }
+QGroupBox::title { subcontrol-origin: margin; left: 14px; padding: 0 6px; color: #50657f; }
+QHeaderView::section { background: #f0f4f9; padding: 13px; color: #526781; }
+QTableWidget { alternate-background-color: #f8fafc; selection-background-color: #e5edfc; }
+QScrollBar:vertical { background: #edf1f6; width: 10px; margin: 0; }
+QScrollBar::handle:vertical { background: #b8c5d6; border-radius: 5px; min-height: 28px; }
+QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical { height: 0; }
+QLineEdit:read-only { background: #f8fafc; border-color: #e2e8f0; }
+"""

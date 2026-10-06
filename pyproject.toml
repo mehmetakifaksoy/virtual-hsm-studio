@@ -4,12 +4,13 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "softhsm-studio"
-version = "0.2.0"
+version = "0.4.0b2"
 description = "Slot-oriented virtual HSM simulator and PKCS#11 module explorer with a desktop GUI"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
   "PySide6>=6.8,<7",
+  "cryptography>=44,<51",
   "python-pkcs11>=0.10,<0.11",
 ]
 
