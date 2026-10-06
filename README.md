@@ -96,6 +96,7 @@ The optional `.cmd` launchers expect a `.venv` inside the repository; the comman
 
 ```powershell
 python -m compileall src tests
+New-Item -ItemType Directory -Force .pytest-tmp | Out-Null
 python -m pytest -q --basetemp=.pytest-tmp/run
 python -m softhsm_studio --smoke-test
 python -m softhsm_studio.key_manager --smoke-test
