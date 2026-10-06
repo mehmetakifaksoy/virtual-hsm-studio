@@ -10,7 +10,7 @@ class CloudIntegrationPage(QWidget):
     def __init__(self):
         super().__init__()
         layout = QVBoxLayout(self)
-        heading = QLabel("Cloud Integration · Huawei External BYOK")
+        heading = QLabel("Cloud KMS Integration · Cloud KMS External BYOK")
         heading.setObjectName("PageTitle")
         layout.addWidget(heading)
         notice = QLabel(

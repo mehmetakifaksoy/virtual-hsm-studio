@@ -1,4 +1,4 @@
-"""Offline Huawei-shaped BYOK scaffold, never a live KMS client.
+"""Offline vendor-neutral BYOK scaffold, never a live KMS client.
 
 RSA OAEP validates fake imports, but no imported material is retained.
 No credentials, network, filesystem persistence, encrypt/decrypt or upload API.
@@ -20,7 +20,7 @@ def oaep():
     return padding.OAEP(mgf=padding.MGF1(hashes.SHA256()), algorithm=hashes.SHA256(), label=None)
 
 
-class FakeHuaweiByokAdapter:
+class MockCloudKmsAdapter:
     mock = True
 
     def __init__(self, clock=None):

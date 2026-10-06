@@ -8,7 +8,7 @@ from cryptography.hazmat.primitives.asymmetric import padding
 from softhsm_studio.application.audit import SafeAudit
 from softhsm_studio.application.cloud import CloudWorkflowError, ExternalByokWorkflow
 from softhsm_studio.domain.cloud import WrappedKeyMaterial
-from softhsm_studio.infrastructure.cloud.huawei import FakeHuaweiByokAdapter
+from softhsm_studio.infrastructure.cloud.mock import MockCloudKmsAdapter
 
 
 def wrapped(parameters, data=None):
@@ -29,7 +29,7 @@ def wrapped(parameters, data=None):
 
 def test_offline_external_byok_contract_and_no_secret_logs(caplog):
     audit = SafeAudit()
-    adapter = FakeHuaweiByokAdapter()
+    adapter = MockCloudKmsAdapter()
     flow = ExternalByokWorkflow(adapter, audit)
     metadata = flow.create_external_key()
     assert metadata.origin == "external" and metadata.mock
@@ -52,7 +52,7 @@ def test_offline_external_byok_contract_and_no_secret_logs(caplog):
 def test_invalid_imports_are_rejected(failure):
     now = datetime.now(UTC)
     clock = [now]
-    flow = ExternalByokWorkflow(FakeHuaweiByokAdapter(clock=lambda: clock[0]), SafeAudit())
+    flow = ExternalByokWorkflow(MockCloudKmsAdapter(clock=lambda: clock[0]), SafeAudit())
     metadata = flow.create_external_key()
     parameters = flow.get_import_parameters(metadata.key_id)
     material = wrapped(parameters)

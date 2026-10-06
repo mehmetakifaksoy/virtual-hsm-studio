@@ -9,7 +9,7 @@ import subprocess
 import sys
 
 ROOT = Path(__file__).resolve().parents[1]
-VERSION = '0.5.0-alpha.1'
+VERSION = '0.5.0-alpha.2'
 TOOLS = (
     ('VirtualHsmStudio', 'Virtual HSM Studio', 'windows.spec'),
     ('HsmKeyManager', 'HSM Key Manager', 'key_manager.spec'),

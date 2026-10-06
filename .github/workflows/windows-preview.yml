@@ -36,7 +36,7 @@ jobs:
       - name: Upload test downloads
         uses: actions/upload-artifact@v4
         with:
-          name: VirtualHsmStudio-0.5.0-alpha.1-Windows-x64
+          name: VirtualHsmStudio-0.5.0-alpha.2-Windows-x64
           path: dist/preview/*
           if-no-files-found: error
           retention-days: 14

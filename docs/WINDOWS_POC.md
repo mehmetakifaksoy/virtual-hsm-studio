@@ -1,6 +1,6 @@
-# Windows POC guide — 0.5.0-alpha.1 local preview
+# Windows POC guide — 0.5.0-alpha.2 local preview
 
-This preview includes Key Sovereignty, Cloud Integration and Audit/Diagnostics.
+This preview includes Key Sovereignty, Cloud KMS Integration and Audit/Diagnostics.
 It is an unreleased test build; older GitHub beta.2 assets do not include these pages.
 
 ## Test local protection
@@ -11,16 +11,16 @@ It is an unreleased test build; older GitHub beta.2 assets do not include these 
 4. Select the initialized token and virtual session KEK reference, then click Encrypt Locally.
 5. Check the output .vhspkg path and algorithm/version/wrapping summary.
 6. Open Audit/Diagnostics to inspect operation metadata without secrets.
-7. Open Cloud Integration to create mock external metadata and inspect import parameters/status.
+7. Open Cloud KMS Integration to create mock external metadata and inspect import parameters/status.
 
 AES-256-GCM encryption is real. KEK wrapping is explicitly virtual/mock and only recoverable
-while the same application session remains open. Do not use valuable data. Huawei is offline
+while the same application session remains open. Do not use valuable data. Cloud KMS is offline
 mock; no credentials, network, file upload or native PKCS#11 wrapping are implemented.
 The original source is preserved. Plaintext never uploaded.
 
 ## Preview files
 
-Use VirtualHsmStudio-0.5.0-alpha.1-Setup.exe or extract the complete Windows-x64 ZIP.
+Use VirtualHsmStudio-0.5.0-alpha.2-Setup.exe or extract the complete Windows-x64 ZIP.
 SHA256SUMS.txt lists file checksums. Key Manager and Sign & Verify are separate companion tools.
 Close an older instance before installing. Portable testing avoids updating an existing installation.
 

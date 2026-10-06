@@ -8,8 +8,8 @@ HSM management, local Protect-Before-Cloud encryption and cloud BYOK adapters be
 
 - Real local AES-256-GCM, fresh local DEKs and nonces; authenticated versioned envelope packages.
 - Explicit virtual/mock wrapping: real AES-GCM wrapping with a process-memory KEK, separate from simulator key metadata. Native PKCS#11 wrapping is not implemented.
-- Offline Huawei External BYOK contracts: create external metadata, obtain import parameters, import wrapped material and inspect status. No credentials, network or upload.
-- Nine modular areas: Dashboard, Providers, Slots/Tokens, Sessions, Objects, Keys, Cloud Integration, Key Sovereignty, Audit/Diagnostics.
+- Offline Cloud KMS External BYOK contracts: create external metadata, obtain import parameters, import wrapped material and inspect status. No credentials, network or upload.
+- Nine modular areas: Dashboard, Providers, Slots/Tokens, Sessions, Objects, Keys, Cloud KMS Integration, Key Sovereignty, Audit/Diagnostics.
 - Closed-schema, in-memory protection/BYOK audit without PINs, raw keys, plaintext, import tokens or credentials.
 
 **Virtual packages are recoverable only while the same process-memory KEK is available. Closing the app or switching provider discards it. Use disposable test files only.** Python memory is not a protected HSM boundary.
@@ -22,7 +22,7 @@ The existing Key Manager and Sign & Verify applications remain available. SoftHS
 
 ## Previous packaged preview
 
-The Key Sovereignty branch produces **0.5.0-alpha.1** test downloads in the
+The Key Sovereignty branch produces **0.5.0-alpha.2** test downloads in the
 [Windows Preview workflow](https://github.com/mehmetakifaksoy/virtual-hsm-studio/actions/workflows/windows-preview.yml).
 Open a successful run and download its artifact (GitHub sign-in required); extract it to find
 the Setup EXE, portable ZIP and SHA256SUMS.txt. Test artifacts expire after 14 days.

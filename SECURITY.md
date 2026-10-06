@@ -25,7 +25,7 @@ PINs, private/secret key bytes, plaintext, import tokens or credentials. Referen
 labels, not a secret-detection mechanism. Audit is not durable/tamper-evident and does not yet
 cover every existing HSM operation. Public POC errors do not echo adapter exceptions.
 
-Huawei is an offline fake. Import tokens and private wrapping keys exist transiently in memory,
+Cloud KMS is an offline fake. Import tokens and private wrapping keys exist transiently in memory,
 have a ten-minute acceptance window and are removed after valid import. RSA-OAEP-SHA-256
 wrapped AES-256 material is validated but not retained. Invalid, expired, wrong-key and replay
 imports fail. No credentials are accepted, persisted or logged. Real External BYOK would import

@@ -49,7 +49,7 @@ def test_console_navigation_has_all_management_pages(monkeypatch) -> None:
             "Sessions",
             "Objects",
             "Keys",
-            "Cloud Integration",
+            "Cloud KMS Integration",
             "Key Sovereignty",
             "Audit/Diagnostics",
         ]

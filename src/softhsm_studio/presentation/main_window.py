@@ -15,7 +15,7 @@ from softhsm_studio.application.audit import SafeAudit
 from softhsm_studio.application.cloud import ExternalByokWorkflow
 from softhsm_studio.application.sovereignty import ProtectBeforeCloud
 from softhsm_studio.domain.models import ProviderKind, SessionInfo, SlotInfo
-from softhsm_studio.infrastructure.cloud.huawei import FakeHuaweiByokAdapter
+from softhsm_studio.infrastructure.cloud.mock import MockCloudKmsAdapter
 from softhsm_studio.infrastructure.local_crypto import AesGcmCipher
 from softhsm_studio.infrastructure.pkcs11 import Pkcs11ModuleProvider
 from softhsm_studio.infrastructure.virtual_hsm import VirtualHsmProvider
@@ -39,7 +39,7 @@ class MainWindow(SovereigntyActions, SlotActions, SessionActions, ObjectActions,
         "Sessions",
         "Objects",
         "Keys",
-        "Cloud Integration",
+        "Cloud KMS Integration",
         "Key Sovereignty",
         "Audit/Diagnostics",
     )
@@ -62,7 +62,7 @@ class MainWindow(SovereigntyActions, SlotActions, SessionActions, ObjectActions,
         self.audit = SafeAudit()
         self.key_wrapper = VirtualMemoryKeyWrapper()
         self.protection = ProtectBeforeCloud(AesGcmCipher(), self.key_wrapper, self.audit)
-        self.cloud_workflow = ExternalByokWorkflow(FakeHuaweiByokAdapter(), self.audit)
+        self.cloud_workflow = ExternalByokWorkflow(MockCloudKmsAdapter(), self.audit)
         self._build_ui()
         self._render_provider()
         self._render_slots(self.slots)

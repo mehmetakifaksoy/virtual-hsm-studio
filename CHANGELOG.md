@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased — Key Sovereignty POC (2026-10-06)
+## Unreleased â€” Key Sovereignty POC (2026-10-06)
 
 - Added versioned 0.5.0-alpha.1 Windows test installers/portable packages and feature-branch Actions downloads.
 
@@ -8,8 +8,8 @@
 - Preserved local HSM console changes and reconciled origin/main on the feature branch.
 - Added reference-only KEK/DEK/envelope models and capability-based local AES-256-GCM.
 - Added explicit ephemeral virtual wrapping and authenticated ciphertext-only packages.
-- Added vendor-neutral External BYOK contracts and offline Huawei adapter validation.
-- Added Key Sovereignty, Cloud Integration, Keys and Audit/Diagnostics; restored Object Explorer.
+- Added vendor-neutral External BYOK contracts and offline Cloud KMS adapter validation.
+- Added Key Sovereignty, Cloud KMS Integration, Keys and Audit/Diagnostics; restored Object Explorer.
 - Added closed-schema protection/BYOK audit, negative crypto, no-secret-log and GUI tests.
 - Retained standalone Key Manager and Sign & Verify; native modules require explicit selection.
 - No native wrapping, upload, credentials, main merge, new tag or release. Existing installers predate this POC.
