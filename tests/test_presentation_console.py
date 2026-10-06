@@ -41,17 +41,22 @@ def test_console_navigation_has_all_management_pages(monkeypatch) -> None:
     _disable_module_autoload(monkeypatch)
     window = main_window.MainWindow()
     try:
-        assert window.page_stack.count() == 4
+        assert window.page_stack.count() == 9
         assert [button.text() for button in window.navigation] == [
-            "Home",
-            "Connections",
-            "Slots",
+            "Dashboard",
+            "Providers",
+            "Slots/Tokens",
             "Sessions",
+            "Objects",
+            "Keys",
+            "Cloud Integration",
+            "Key Sovereignty",
+            "Audit/Diagnostics",
         ]
         for index, button in enumerate(window.navigation):
             button.click()
             assert window.page_stack.currentIndex() == index
-        assert "not available through this application adapter" in window.sessions_page.message.text()
+        assert "does not support session management" in window.sessions_page.message.text()
     finally:
         window.close()
         app.processEvents()

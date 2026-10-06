@@ -47,7 +47,9 @@ class SessionsPage(QWidget):
         self.slot_selector.setMinimumWidth(220)
         self.read_write = QCheckBox("Read / write")
         self.read_write.setChecked(False)
-        self.read_write.setToolTip("Read only is the default. SO login requires read / write access.")
+        self.read_write.setToolTip(
+            "Read only is the default. SO login requires read / write access."
+        )
         self.open_button = QPushButton("Open Session")
         self.open_button.setObjectName("PrimaryButton")
         self.open_button.clicked.connect(self._open_selected_slot)
@@ -157,8 +159,9 @@ class SessionsPage(QWidget):
         self.message.setText(
             f"{len(sessions)} active session{'s' if len(sessions) != 1 else ''}."
             if supported and available_slots
-            else "Initialize a token in Slots before opening a session." if supported
-            else "Session management is not available through this application adapter. This does not mean your HSM lacks PKCS#11 session support."
+            else "Initialize a token in Slots before opening a session."
+            if supported
+            else "The active provider does not support session management."
         )
         self.set_busy(busy, supported)
         self._update_actions()
@@ -187,7 +190,12 @@ class SessionsPage(QWidget):
         if session is None:
             return
         role, accepted = QInputDialog.getItem(
-            self, "Session Login", "Role", ["USER", "SO"] if session.read_write else ["USER"], 0, False
+            self,
+            "Session Login",
+            "Role",
+            ["USER", "SO"] if session.read_write else ["USER"],
+            0,
+            False,
         )
         if not accepted:
             return

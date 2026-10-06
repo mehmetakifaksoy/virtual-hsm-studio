@@ -1,4 +1,5 @@
 """Session action handlers; only HsmService handles provider access."""
+
 from softhsm_studio.domain.models import SessionRole
 
 
@@ -16,6 +17,11 @@ class SessionActions:
             self.slots,
             self.sessions,
             True,
+            self._busy,
+        )
+        self.objects_page.set_sessions(
+            self.sessions,
+            self.service.supports_objects,
             self._busy,
         )
         self._update_dashboard()
@@ -43,7 +49,9 @@ class SessionActions:
             else:
                 self.service.login_user(session_id, pin)
         except Exception:
-            self._show_error("Login failed. Check the role, session access and PIN. Avoid repeated PIN attempts.")
+            self._show_error(
+                "Login failed. Check the role, session access and PIN. Avoid repeated PIN attempts."
+            )
         finally:
             pin = ""
         self._refresh_sessions()

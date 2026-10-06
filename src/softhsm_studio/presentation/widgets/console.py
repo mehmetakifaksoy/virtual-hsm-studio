@@ -1,10 +1,24 @@
 """Console shell layout; HSM operations remain outside widgets."""
+
 from functools import partial
+
 from PySide6.QtCore import Qt
-from PySide6.QtWidgets import (QFrame, QHBoxLayout, QLabel, QPushButton,
-                              QStackedWidget, QVBoxLayout, QWidget, QScrollArea)
-from ..pages import DashboardPage, ProvidersPage, SessionsPage, SlotsPage
-from softhsm_studio import __version__
+from PySide6.QtWidgets import (
+    QFrame,
+    QHBoxLayout,
+    QLabel,
+    QPushButton,
+    QScrollArea,
+    QStackedWidget,
+    QVBoxLayout,
+    QWidget,
+)
+
+from ..pages import DashboardPage, ObjectsPage, ProvidersPage, SessionsPage, SlotsPage
+from ..pages.audit import AuditPage
+from ..pages.cloud import CloudIntegrationPage
+from ..pages.sovereignty import KeySovereigntyPage
+
 
 def build_console(self) -> None:
     root = QWidget()
@@ -14,25 +28,23 @@ def build_console(self) -> None:
 
     sidebar = QFrame()
     sidebar.setObjectName("Sidebar")
-    sidebar.setFixedWidth(224)
+    sidebar.setStyleSheet("QPushButton#NavigationButton { padding: 9px 14px; }")
+    sidebar.setFixedWidth(235)
     side_layout = QVBoxLayout(sidebar)
-    side_layout.setContentsMargins(22, 24, 22, 24)
-    side_layout.setSpacing(10)
+    side_layout.setContentsMargins(18, 18, 18, 18)
+    side_layout.setSpacing(6)
 
-    brand = QLabel("HSM / STUDIO")
-    brand.setObjectName("BrandMark")
-    side_layout.addWidget(brand)
-    title = QLabel("Virtual HSM\nStudio")
+    title = QLabel("Virtual HSM Studio")
     title.setObjectName("AppTitle")
     title.setWordWrap(True)
-    subtitle = QLabel("MANAGEMENT CONSOLE")
+    subtitle = QLabel("HSM · Key Sovereignty · Cloud BYOK")
     subtitle.setObjectName("SidebarMuted")
     subtitle.setWordWrap(True)
     side_layout.addWidget(title)
     side_layout.addWidget(subtitle)
     side_layout.addSpacing(12)
 
-    self.navigation: list[QPushButton] = []
+    self.navigation = []
     for index, page_name in enumerate(self.PAGE_NAMES):
         button = QPushButton(page_name)
         button.setObjectName("NavigationButton")
@@ -48,14 +60,11 @@ def build_console(self) -> None:
     warning.setObjectName("SidebarMuted")
     warning.setWordWrap(True)
     side_layout.addWidget(warning)
-    version = QLabel(f"POC PREVIEW  ·  {__version__}")
-    version.setObjectName("SidebarMuted")
-    side_layout.addWidget(version)
 
     content = QFrame()
     content.setObjectName("Panel")
     content_layout = QVBoxLayout(content)
-    content_layout.setContentsMargins(22, 24, 22, 24)
+    content_layout.setContentsMargins(18, 18, 18, 18)
     content_layout.setSpacing(12)
 
     header = QHBoxLayout()
@@ -76,24 +85,40 @@ def build_console(self) -> None:
     self.provider_detail.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
     self.provider_detail.setWordWrap(True)
     content_layout.addWidget(self.provider_detail)
-    self.provider_detail.hide()
 
     self.feedback = QLabel()
     self.feedback.setObjectName("Feedback")
     self.feedback.setWordWrap(True)
     content_layout.addWidget(self.feedback)
-    self.feedback.hide()
 
     self.dashboard_page = DashboardPage()
     self.providers_page = ProvidersPage()
     self.slots_page = SlotsPage()
     self.sessions_page = SessionsPage()
+    self.objects_page = ObjectsPage()
+    self.sovereignty_page = KeySovereigntyPage()
+    self.cloud_page = CloudIntegrationPage()
+    self.audit_page = AuditPage(self.audit)
+    self.keys_page = QWidget()
+    keys_layout = QVBoxLayout(self.keys_page)
+    keys_layout.addWidget(
+        QLabel("Keys · Select a token in Slots/Tokens, then open its key manager.")
+    )
+    self.keys_button = QPushButton("Manage selected token keys")
+    self.keys_button.clicked.connect(self._open_slot_keys)
+    keys_layout.addWidget(self.keys_button)
+    keys_layout.addStretch(1)
     self.page_stack = QStackedWidget()
     for page in (
         self.dashboard_page,
         self.providers_page,
         self.slots_page,
         self.sessions_page,
+        self.objects_page,
+        self.keys_page,
+        self.cloud_page,
+        self.sovereignty_page,
+        self.audit_page,
     ):
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
@@ -107,9 +132,13 @@ def build_console(self) -> None:
     self.setCentralWidget(root)
     self.statusBar().showMessage(self._last_status)
 
-    self.dashboard_page.navigate_requested.connect(self._navigate)
+    self.sovereignty_page.encrypt_requested.connect(self._encrypt_locally)
+    self.cloud_page.create_requested.connect(self._cloud_create)
+    self.cloud_page.parameters_requested.connect(self._cloud_parameters)
+    self.cloud_page.status_requested.connect(self._cloud_status)
     self.dashboard_page.virtual_provider_requested.connect(self._switch_to_virtual)
     self.dashboard_page.load_module_requested.connect(self._choose_module)
+    self.dashboard_page.navigate_requested.connect(self._navigate)
     self.providers_page.load_module_requested.connect(self._choose_module)
     self.providers_page.virtual_provider_requested.connect(self._switch_to_virtual)
     self.providers_page.refresh_requested.connect(self._refresh_provider)
@@ -123,4 +152,5 @@ def build_console(self) -> None:
     self.sessions_page.close_session_requested.connect(self._close_session)
     self.sessions_page.login_requested.connect(self._login_session)
     self.sessions_page.logout_requested.connect(self._logout_session)
+    self.objects_page.refresh_requested.connect(self._load_objects)
     self._navigate(0)

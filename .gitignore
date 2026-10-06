@@ -13,3 +13,7 @@ dist/
 work/
 tools/softhsm2/
 packaging/uninstall-files.nsh
+
+.pytest-tmp/
+*.vhspkg
+

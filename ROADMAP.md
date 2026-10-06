@@ -1,5 +1,28 @@
 # Virtual HSM Studio Roadmap
 
+Positioning: **Vendor-agnostic HSM, PKCS#11 and Key Sovereignty Platform**.
+
+## Key Sovereignty milestone — unreleased POC
+
+Implemented: local AES-256-GCM, fresh DEKs, authenticated versioned envelopes,
+virtual memory KEK wrap/unwrap, Key Sovereignty and Cloud Integration pages,
+offline External BYOK contracts and Huawei fake, safe protection/BYOK audit,
+negative crypto, no-secret-log and GUI workflow tests.
+
+Before production or durable-data release:
+
+- Native PKCS#11 wrapping with authenticated sessions, mechanism/policy checks and non-extractable KEKs.
+- Recoverable key lifecycle, rotation, backup/recovery and explicit retention policy.
+- GUI decryption, background/streaming processing and atomic package publication.
+- Live Huawei adapter with injected ephemeral authentication and region/API integration tests.
+- Ciphertext-only upload port accepting validated envelopes; no plaintext upload API.
+- Durable tamper-evident audit and wider HSM lifecycle audit coverage.
+- Independent security review, hardware validation and clean-machine packaging tests.
+
+SoftHSMv2 remains an independent compatible/test provider, not the product identity.
+
+## Earlier HSM laboratory milestones
+
 Virtual HSM Studio is an open-source PKCS#11 development,
 simulation, and HSM management proof-of-concept.
 

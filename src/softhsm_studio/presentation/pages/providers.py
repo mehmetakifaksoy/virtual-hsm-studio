@@ -12,7 +12,6 @@ from PySide6.QtWidgets import (
 )
 
 from softhsm_studio.domain.models import ProviderInfo
-from ..widgets.cards import ActionCard
 
 
 class ProvidersPage(QWidget):
@@ -25,7 +24,7 @@ class ProvidersPage(QWidget):
         layout = QVBoxLayout(self)
         layout.setSpacing(16)
 
-        heading = QLabel("Connections")
+        heading = QLabel("Providers")
         heading.setObjectName("PageTitle")
         layout.addWidget(heading)
         description = QLabel("Connect to a PKCS#11 module or use the development-only Virtual HSM.")
@@ -33,24 +32,19 @@ class ProvidersPage(QWidget):
         description.setWordWrap(True)
         layout.addWidget(description)
 
-        cards = QHBoxLayout()
-        virtual = ActionCard("LOCAL DEMO · NO HARDWARE", "Virtual HSM",
-            "A persistent local simulator. Explore slots, tokens and sessions without hardware. Key generation creates metadata only.")
-        self.virtual_button = QPushButton("Start Demo")
-        self.virtual_button.setObjectName("PrimaryButton")
-        self.virtual_button.clicked.connect(self.virtual_provider_requested)
-        virtual.content.addWidget(self.virtual_button)
-        module = ActionCard("REAL HSM / EXTERNAL PROVIDER", "Vendor PKCS#11 module",
-            "Connect a vendor module matching the application's architecture. Available operations depend on the provider.")
-        self.load_module_button = QPushButton("Connect HSM…")
+        actions = QHBoxLayout()
+        self.load_module_button = QPushButton("Load PKCS#11 Module…")
+        self.load_module_button.setObjectName("PrimaryButton")
         self.load_module_button.clicked.connect(self.load_module_requested)
-        module.content.addWidget(self.load_module_button)
-        cards.addWidget(virtual)
-        cards.addWidget(module)
-        layout.addLayout(cards)
-        self.refresh_button = QPushButton("Refresh connected provider")
+        self.virtual_button = QPushButton("Use Virtual HSM")
+        self.virtual_button.clicked.connect(self.virtual_provider_requested)
+        self.refresh_button = QPushButton("Refresh Provider")
         self.refresh_button.clicked.connect(self.refresh_requested)
-        layout.addWidget(self.refresh_button)
+        actions.addWidget(self.load_module_button)
+        actions.addWidget(self.virtual_button)
+        actions.addWidget(self.refresh_button)
+        actions.addStretch(1)
+        layout.addLayout(actions)
 
         form = QFormLayout()
         self.name = self._value_field()
@@ -95,7 +89,10 @@ class ProvidersPage(QWidget):
             ("Mechanisms", service.supports_mechanisms),
             ("Virtual administration", service.supports_virtual_admin),
         )
-        self.capabilities.setText("Application features · " + " · ".join(
-            f"{name}: {'available' if supported else 'not available in this application'}"
-            for name, supported in capabilities
-        ))
+        self.capabilities.setText(
+            "Capabilities · "
+            + " · ".join(
+                f"{name}: {'available' if supported else 'not supported'}"
+                for name, supported in capabilities
+            )
+        )
