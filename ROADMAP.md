@@ -2,7 +2,7 @@
 
 Positioning: **Vendor-agnostic HSM, PKCS#11 and Key Sovereignty Platform**.
 
-## Key Sovereignty milestone — unreleased POC
+## Key Sovereignty milestone — alpha POC
 
 Implemented: local AES-256-GCM, fresh DEKs, authenticated versioned envelopes,
 virtual memory KEK wrap/unwrap, Key Sovereignty and Cloud KMS Integration pages,
