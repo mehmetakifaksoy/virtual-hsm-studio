@@ -1,7 +1,7 @@
-# Windows POC guide — 0.5.0-alpha.2 local preview
+# Windows POC guide — 0.5.0-alpha.2
 
 This preview includes Key Sovereignty, Cloud KMS Integration and Audit/Diagnostics.
-It is an unreleased test build; older GitHub beta.2 assets do not include these pages.
+Download the unsigned alpha prerelease from https://github.com/mehmetakifaksoy/virtual-hsm-studio/releases/tag/v0.5.0-alpha.2. Older beta.2 assets do not include these pages.
 
 ## Test local protection
 

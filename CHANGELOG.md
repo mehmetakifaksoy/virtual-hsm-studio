@@ -1,18 +1,17 @@
 # Changelog
 
-## Unreleased â€” Key Sovereignty POC (2026-10-06)
+## 0.5.0-alpha.2 - 2026-10-07
 
-- Added versioned 0.5.0-alpha.1 Windows test installers/portable packages and feature-branch Actions downloads.
-
-- Repositioned as Vendor-agnostic HSM, PKCS#11 and Key Sovereignty Platform.
-- Preserved local HSM console changes and reconciled origin/main on the feature branch.
-- Added reference-only KEK/DEK/envelope models and capability-based local AES-256-GCM.
-- Added explicit ephemeral virtual wrapping and authenticated ciphertext-only packages.
-- Added vendor-neutral External BYOK contracts and offline Cloud KMS adapter validation.
-- Added Key Sovereignty, Cloud KMS Integration, Keys and Audit/Diagnostics; restored Object Explorer.
-- Added closed-schema protection/BYOK audit, negative crypto, no-secret-log and GUI tests.
-- Retained standalone Key Manager and Sign & Verify; native modules require explicit selection.
-- No native wrapping, upload, credentials, main merge, new tag or release. Existing installers predate this POC.
+- Positioned as a Vendor-agnostic HSM, PKCS#11 and Key Sovereignty Platform.
+- Added real local AES-256-GCM, fresh DEKs and authenticated versioned envelope packages.
+- Added explicitly virtual, process-memory KEK wrapping and capability checks.
+- Added vendor-neutral Cloud KMS Integration with offline External BYOK contracts and mock adapter.
+- Added Key Sovereignty, Cloud KMS Integration, Keys and Audit/Diagnostics console pages.
+- Added closed-schema protection/BYOK audit with no secret payloads.
+- Preserved provider, slot/token, session, object, key management and signing workflows.
+- Added negative crypto, no-secret-log, GUI and packaged executable validation.
+- Published three Windows installers, portable ZIPs and SHA-256 checksums.
+- Native wrapping, durable KEK recovery, live cloud connections and uploads remain unimplemented.
 
 ## 0.4.0-beta.2
 

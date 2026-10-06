@@ -2,7 +2,7 @@
 
 **Vendor-agnostic HSM, PKCS#11 and Key Sovereignty Platform**
 
-## Key Sovereignty POC — source branch, unreleased
+## Key Sovereignty alpha preview
 
 HSM management, local Protect-Before-Cloud encryption and cloud BYOK adapters behind vendor-neutral contracts.
 
@@ -20,30 +20,18 @@ External BYOK is a separate mode: it imports customer key material into cloud KM
 
 The existing Key Manager and Sign & Verify applications remain available. SoftHSMv2 is an independent compatible/test provider; this product is not its official GUI and is not affiliated with its maintainers.
 
-## Previous packaged preview
-
-The Key Sovereignty branch produces **0.5.0-alpha.2** test downloads in the
-[Windows Preview workflow](https://github.com/mehmetakifaksoy/virtual-hsm-studio/actions/workflows/windows-preview.yml).
-Open a successful run and download its artifact (GitHub sign-in required); extract it to find
-the Setup EXE, portable ZIP and SHA256SUMS.txt. Test artifacts expire after 14 days.
-See the [updated Windows test guide](docs/WINDOWS_POC.md). These are unsigned test builds.
-
-The installers below predate Key Sovereignty and **do not contain the new source-branch POC**.
-
-Three Windows applications for PKCS#11 HSM workflows. **POC preview · v0.4.0-beta.2**
-
 ## Download and run — no Python required
 
-Open [Windows releases](https://github.com/mehmetakifaksoy/virtual-hsm-studio/releases/tag/v0.4.0-beta.2) and expand **Assets**.
+Open [Windows releases](https://github.com/mehmetakifaksoy/virtual-hsm-studio/releases/tag/v0.5.0-alpha.2) and expand **Assets**.
 
 | Application | Windows installer | Purpose |
 | --- | --- | --- |
-| HSM Studio | [VirtualHsmStudio Setup](https://github.com/mehmetakifaksoy/virtual-hsm-studio/releases/download/v0.4.0-beta.2/VirtualHsmStudio-0.4.0-beta.2-Setup.exe) | Connections, slots, token preparation and simulator sessions |
-| Key Manager | [HsmKeyManager Setup](https://github.com/mehmetakifaksoy/virtual-hsm-studio/releases/download/v0.4.0-beta.2/HsmKeyManager-0.4.0-beta.2-Setup.exe) | Key metadata and supported AES/RSA generation |
-| Sign & Verify | [HsmSignVerify Setup](https://github.com/mehmetakifaksoy/virtual-hsm-studio/releases/download/v0.4.0-beta.2/HsmSignVerify-0.4.0-beta.2-Setup.exe) | RSA file signing, public-key export and independent verification |
+| HSM Studio | [VirtualHsmStudio Setup](https://github.com/mehmetakifaksoy/virtual-hsm-studio/releases/download/v0.5.0-alpha.2/VirtualHsmStudio-0.5.0-alpha.2-Setup.exe) | HSM management, local file protection, Cloud KMS Integration and audit |
+| Key Manager | [HsmKeyManager Setup](https://github.com/mehmetakifaksoy/virtual-hsm-studio/releases/download/v0.5.0-alpha.2/HsmKeyManager-0.5.0-alpha.2-Setup.exe) | Key metadata and supported AES/RSA generation |
+| Sign & Verify | [HsmSignVerify Setup](https://github.com/mehmetakifaksoy/virtual-hsm-studio/releases/download/v0.5.0-alpha.2/HsmSignVerify-0.5.0-alpha.2-Setup.exe) | RSA file signing, public-key export and independent verification |
 
 Run the selected Setup and launch the application from Start. Installers are per-user and require 64-bit Windows.
-They are unsigned POC builds. A clean independent Windows-machine pilot is still pending.
+This is an unsigned alpha prerelease for testing. Virtual KEKs last only for the current application session; use disposable files. Cloud KMS Integration is an offline mock, not a live cloud connection.
 
 For portable use, download the corresponding `Windows-x64.zip`, **extract the entire archive**, and run the named EXE.
 Keep `HsmWorker.exe` and `_internal` next to the GUI executable. Do not run from inside the ZIP or copy the EXE alone.

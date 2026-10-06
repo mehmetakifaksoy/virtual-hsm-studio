@@ -60,6 +60,8 @@ def add_notices(bundle):
     shutil.copy2(ROOT/'docs/WINDOWS_POC.md',bundle/'POC-GUIDE.md')
     shutil.copy2(ROOT/'docs/SIGNING_GUIDE.md',bundle/'SIGNING-GUIDE.md')
     shutil.copy2(ROOT/'LICENSE',bundle/'LICENSE.txt')
+    shutil.copy2(ROOT/'README.md',bundle/'README.md')
+    shutil.copy2(ROOT/'SECURITY.md',bundle/'SECURITY.md')
 
 
 def main():
