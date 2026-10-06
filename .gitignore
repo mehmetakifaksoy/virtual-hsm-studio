@@ -8,7 +8,11 @@ dist/
 *.egg-info/
 *.log
 .DS_Store
-
+ææ
 .hsm-data/
 work/
 tools/softhsm2/
+
+.pytest-tmp/
+*.vhspkg
+

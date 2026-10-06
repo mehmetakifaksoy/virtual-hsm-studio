@@ -46,7 +46,10 @@ class SessionsPage(QWidget):
         self.slot_selector = QComboBox()
         self.slot_selector.setMinimumWidth(220)
         self.read_write = QCheckBox("Read / write")
-        self.read_write.setChecked(True)
+        self.read_write.setChecked(False)
+        self.read_write.setToolTip(
+            "Read only is the default. SO login requires read / write access."
+        )
         self.open_button = QPushButton("Open Session")
         self.open_button.setObjectName("PrimaryButton")
         self.open_button.clicked.connect(self._open_selected_slot)
@@ -63,13 +66,16 @@ class SessionsPage(QWidget):
             self.read_write,
             self.open_button,
             self.refresh_button,
-            self.login_button,
-            self.logout_button,
-            self.close_button,
         ):
             controls.addWidget(widget)
         controls.addStretch(1)
         layout.addLayout(controls)
+        session_actions = QHBoxLayout()
+        session_actions.addWidget(QLabel("Selected session"))
+        for button in (self.login_button, self.logout_button, self.close_button):
+            session_actions.addWidget(button)
+        session_actions.addStretch(1)
+        layout.addLayout(session_actions)
 
         self.table = QTableWidget(0, 6)
         self.table.setHorizontalHeaderLabels(
@@ -82,6 +88,7 @@ class SessionsPage(QWidget):
         self.table.verticalHeader().setVisible(False)
         self.table.setShowGrid(False)
         self.table.horizontalHeader().setStretchLastSection(True)
+        self.table.horizontalHeader().setMinimumSectionSize(80)
         self.table.itemSelectionChanged.connect(self._update_actions)
         layout.addWidget(self.table, 1)
 
@@ -118,6 +125,8 @@ class SessionsPage(QWidget):
             self.slot_selector.setCurrentIndex(selected_index)
         self.slot_selector.blockSignals(False)
 
+        self.table.blockSignals(True)
+        self.table.clearSelection()
         self._sessions = list(sessions)
         self.table.setRowCount(len(self._sessions))
         for row, session in enumerate(self._sessions):
@@ -145,9 +154,12 @@ class SessionsPage(QWidget):
         )
         if selected_row >= 0:
             self.table.selectRow(selected_row)
+        self.table.blockSignals(False)
         self.table.resizeColumnsToContents()
         self.message.setText(
             f"{len(sessions)} active session{'s' if len(sessions) != 1 else ''}."
+            if supported and available_slots
+            else "Initialize a token in Slots before opening a session."
             if supported
             else "The active provider does not support session management."
         )
@@ -178,7 +190,12 @@ class SessionsPage(QWidget):
         if session is None:
             return
         role, accepted = QInputDialog.getItem(
-            self, "Session Login", "Role", ["USER", "SO"], 0, False
+            self,
+            "Session Login",
+            "Role",
+            ["USER", "SO"] if session.read_write else ["USER"],
+            0,
+            False,
         )
         if not accepted:
             return
@@ -188,8 +205,11 @@ class SessionsPage(QWidget):
             f"{role} PIN",
             QLineEdit.EchoMode.Password,
         )
-        if accepted:
-            self.login_requested.emit(session.session_id, role, pin)
+        try:
+            if accepted:
+                self.login_requested.emit(session.session_id, role, pin)
+        finally:
+            pin = ""
 
     def _logout_selected_session(self) -> None:
         session = self.selected_session

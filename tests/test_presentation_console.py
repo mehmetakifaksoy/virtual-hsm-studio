@@ -41,12 +41,13 @@ def test_console_navigation_has_all_management_pages(monkeypatch) -> None:
     _disable_module_autoload(monkeypatch)
     window = main_window.MainWindow()
     try:
-        assert window.page_stack.count() == 4
+        assert window.page_stack.count() == 5
         assert [button.text() for button in window.navigation] == [
             "Dashboard",
             "Providers",
             "Slots",
             "Sessions",
+            "Objects",
         ]
         for index, button in enumerate(window.navigation):
             button.click()

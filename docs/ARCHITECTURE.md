@@ -7,7 +7,8 @@ Presentation (PySide6)
   ├── Dashboard
   ├── Providers
   ├── Slots
-  └── Sessions
+  ├── Sessions
+  └── Objects
         |
         v
 Application Service
@@ -44,12 +45,21 @@ Contains immutable public models, controlled exceptions, and provider interfaces
 ### Presentation
 
 The PySide6 console is split into Dashboard, Providers, Slots, and Sessions
-pages. Each page owns its widgets and presentation state; `MainWindow`
-coordinates navigation and delegates provider actions to `HsmService`.
+pages. Page widgets live under `presentation/pages`; reusable shell layout is
+built by `presentation/widgets/console.py`. Slot and session action handlers
+are separated from the window coordinator. Pages emit Qt signals and do not
+call provider implementations directly; `MainWindow` routes actions through
+`HsmService`.
 Potentially slow provider connect/refresh calls execute in `QThread` workers.
 Session controls are shown only when the active provider implements the
 optional session capability. Providers that do not implement a capability
 remain usable for the operations they do support.
+
+GUI workflow tests exercise the real dialogs and controls using isolated
+Virtual HSM state, including slot/token administration and RO/RW session
+authentication flows. The Object Explorer queries metadata through the
+application service using an active session and deliberately does not display
+object attribute values or cryptographic key material.
 
 ## Why the PKCS#11 worker is separate
 
@@ -58,7 +68,6 @@ Native PKCS#11 libraries execute inside the process that loads them. A vendor mo
 ## Planned next adapters/features
 
 - PKCS#11 mechanism browser
-- Object explorer
 - AES key generation
 - RSA/EC key pair generation
 - Certificate objects

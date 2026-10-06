@@ -1,13 +1,13 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from PySide6.QtWidgets import (
     QDialog,
     QDialogButtonBox,
     QFormLayout,
-    QLineEdit,
     QLabel,
+    QLineEdit,
     QMessageBox,
     QVBoxLayout,
 )
@@ -16,8 +16,8 @@ from PySide6.QtWidgets import (
 @dataclass(frozen=True, slots=True)
 class TokenInitializationInput:
     label: str
-    so_pin: str
-    user_pin: str
+    so_pin: str = field(repr=False)
+    user_pin: str = field(repr=False)
 
 
 class CreateSlotDialog(QDialog):
@@ -33,13 +33,15 @@ class CreateSlotDialog(QDialog):
         form.addRow("Slot name", self.description_edit)
 
         buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
-        buttons.button(QDialogButtonBox.StandardButton.Ok).setText("Create Slot" if isinstance(self, CreateSlotDialog) else "Initialize Token")
+        buttons.button(QDialogButtonBox.StandardButton.Ok).setText("Create Slot")
         buttons.button(QDialogButtonBox.StandardButton.Ok).setObjectName("PrimaryButton")
         buttons.accepted.connect(self._accept_if_valid)
         buttons.rejected.connect(self.reject)
 
         layout = QVBoxLayout(self)
-        help_text = QLabel("Give this slot a recognizable name. You can initialize its token after creating it." if isinstance(self, CreateSlotDialog) else "Choose a token name and two PINs (4–64 characters). The administrator PIN manages the token; the user PIN grants access to its keys.")
+        help_text = QLabel(
+            "Give this slot a recognizable name. Initialize its token after creating it."
+        )
         help_text.setWordWrap(True)
         help_text.setObjectName("Muted")
         layout.addWidget(help_text)
@@ -60,7 +62,7 @@ class CreateSlotDialog(QDialog):
 class InitializeTokenDialog(QDialog):
     def __init__(self, parent=None) -> None:
         super().__init__(parent)
-        self.setWindowTitle("Initialize Virtual Token")
+        self.setWindowTitle("Initialize Token")
         self.setMinimumWidth(470)
 
         self.label_edit = QLineEdit()
@@ -79,13 +81,15 @@ class InitializeTokenDialog(QDialog):
         form.addRow("Confirm User PIN", self.user_pin_confirm_edit)
 
         buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
-        buttons.button(QDialogButtonBox.StandardButton.Ok).setText("Create Slot" if isinstance(self, CreateSlotDialog) else "Initialize Token")
+        buttons.button(QDialogButtonBox.StandardButton.Ok).setText("Initialize Token")
         buttons.button(QDialogButtonBox.StandardButton.Ok).setObjectName("PrimaryButton")
         buttons.accepted.connect(self._accept_if_valid)
         buttons.rejected.connect(self.reject)
 
         layout = QVBoxLayout(self)
-        help_text = QLabel("Give this slot a recognizable name. You can initialize its token after creating it." if isinstance(self, CreateSlotDialog) else "Choose a token name and two PINs (4–64 characters). The administrator PIN manages the token; the user PIN grants access to its keys.")
+        help_text = QLabel(
+            "Choose a token name and two PINs (4–64 characters). The administrator PIN manages the token; the user PIN grants access to its keys."
+        )
         help_text.setWordWrap(True)
         help_text.setObjectName("Muted")
         layout.addWidget(help_text)
@@ -107,6 +111,19 @@ class InitializeTokenDialog(QDialog):
             user_pin=self.user_pin_edit.text(),
         )
 
+    def clear_pins(self) -> None:
+        for edit in (
+            self.so_pin_edit,
+            self.so_pin_confirm_edit,
+            self.user_pin_edit,
+            self.user_pin_confirm_edit,
+        ):
+            edit.clear()
+
+    def reject(self) -> None:
+        self.clear_pins()
+        super().reject()
+
     def _accept_if_valid(self) -> None:
         value = self.value
         if not value.label:
@@ -116,7 +133,9 @@ class InitializeTokenDialog(QDialog):
             QMessageBox.warning(self, "Validation", "PINs must contain 4–64 characters.")
             return
         if value.so_pin != self.so_pin_confirm_edit.text():
-            QMessageBox.warning(self, "Validation", "Administrator PIN confirmation does not match.")
+            QMessageBox.warning(
+                self, "Validation", "Administrator PIN confirmation does not match."
+            )
             return
         if value.user_pin != self.user_pin_confirm_edit.text():
             QMessageBox.warning(self, "Validation", "User PIN confirmation does not match.")

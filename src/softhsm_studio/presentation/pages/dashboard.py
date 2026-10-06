@@ -1,11 +1,14 @@
 from __future__ import annotations
 
-from PySide6.QtWidgets import QFrame, QGridLayout, QLabel, QVBoxLayout, QWidget
+from PySide6.QtCore import Signal
+from PySide6.QtWidgets import QFrame, QGridLayout, QLabel, QPushButton, QVBoxLayout, QWidget
 
 from softhsm_studio.domain.models import ProviderInfo, SessionInfo, SlotInfo
 
 
 class DashboardPage(QWidget):
+    navigate_requested = Signal(int)
+
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         layout = QVBoxLayout(self)
@@ -32,6 +35,16 @@ class DashboardPage(QWidget):
         self.activity.setObjectName("Feedback")
         self.activity.setWordWrap(True)
         layout.addWidget(self.activity)
+        for page_index, text in (
+            (1, "Connect or change provider"),
+            (2, "Inspect slots and tokens"),
+            (3, "Manage sessions"),
+        ):
+            button = QPushButton(text)
+            button.clicked.connect(
+                lambda *_args, index=page_index: self.navigate_requested.emit(index)
+            )
+            layout.addWidget(button)
         layout.addStretch(1)
 
     @staticmethod
@@ -41,8 +54,10 @@ class DashboardPage(QWidget):
         card_layout = QVBoxLayout(frame)
         label = QLabel(title)
         label.setObjectName("SectionTitle")
+        label.setWordWrap(True)
         value_label = QLabel(value)
         value_label.setObjectName("MetricValue")
+        value_label.setWordWrap(True)
         card_layout.addWidget(label)
         card_layout.addWidget(value_label)
         grid.addWidget(frame, 0, column)

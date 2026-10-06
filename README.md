@@ -24,8 +24,9 @@ The GUI never depends directly on a specific HSM vendor. New provider adapters c
 - Token label, serial, manufacturer, model and flag inspection
 - Isolated PKCS#11 worker with timeout and structured errors
 - Background provider load/refresh threads so vendor modules do not freeze the GUI
-- Modular management console with Dashboard, Providers, Slots and Sessions screens
+- Modular management console with Dashboard, Providers, Slots, Sessions and Objects screens
 - Capability-aware session opening, login, logout and close workflows
+- Session-scoped Object Explorer for safe key metadata (never key material)
 - Unit tests for core domain and virtual HSM behavior
 
 ## Windows setup

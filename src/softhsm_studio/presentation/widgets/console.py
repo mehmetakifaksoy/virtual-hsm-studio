@@ -1,0 +1,126 @@
+"""Console shell layout; HSM operations remain outside widgets."""
+
+from functools import partial
+
+from PySide6.QtCore import Qt
+from PySide6.QtWidgets import (
+    QFrame,
+    QHBoxLayout,
+    QLabel,
+    QPushButton,
+    QStackedWidget,
+    QVBoxLayout,
+    QWidget,
+)
+
+from ..pages import DashboardPage, ObjectsPage, ProvidersPage, SessionsPage, SlotsPage
+
+
+def build_console(self) -> None:
+    root = QWidget()
+    root_layout = QHBoxLayout(root)
+    root_layout.setContentsMargins(16, 16, 16, 16)
+    root_layout.setSpacing(14)
+
+    sidebar = QFrame()
+    sidebar.setObjectName("Sidebar")
+    sidebar.setFixedWidth(235)
+    side_layout = QVBoxLayout(sidebar)
+    side_layout.setContentsMargins(18, 18, 18, 18)
+    side_layout.setSpacing(10)
+
+    title = QLabel("Virtual HSM Studio")
+    title.setObjectName("AppTitle")
+    title.setWordWrap(True)
+    subtitle = QLabel("HSM management console")
+    subtitle.setObjectName("Muted")
+    subtitle.setWordWrap(True)
+    side_layout.addWidget(title)
+    side_layout.addWidget(subtitle)
+    side_layout.addSpacing(12)
+
+    self.navigation = []
+    for index, page_name in enumerate(self.PAGE_NAMES):
+        button = QPushButton(page_name)
+        button.setObjectName("NavigationButton")
+        button.setCheckable(True)
+        button.clicked.connect(partial(self._navigate, index))
+        self.navigation.append(button)
+        side_layout.addWidget(button)
+
+    side_layout.addStretch(1)
+    warning = QLabel(
+        "Virtual mode is for development and testing. It is not a hardware security boundary."
+    )
+    warning.setObjectName("Muted")
+    warning.setWordWrap(True)
+    side_layout.addWidget(warning)
+
+    content = QFrame()
+    content.setObjectName("Panel")
+    content_layout = QVBoxLayout(content)
+    content_layout.setContentsMargins(18, 18, 18, 18)
+    content_layout.setSpacing(12)
+
+    header = QHBoxLayout()
+    self.provider_badge = QLabel("Not connected")
+    self.provider_badge.setObjectName("ProviderBadge")
+    self.provider_title = QLabel("HSM Management Console")
+    self.provider_title.setStyleSheet("font-size: 16pt; font-weight: 700;")
+    self.slot_count = QLabel("0 slots")
+    self.slot_count.setObjectName("Muted")
+    header.addWidget(self.provider_badge)
+    header.addWidget(self.provider_title)
+    header.addStretch(1)
+    header.addWidget(self.slot_count)
+    content_layout.addLayout(header)
+
+    self.provider_detail = QLabel()
+    self.provider_detail.setObjectName("Muted")
+    self.provider_detail.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
+    self.provider_detail.setWordWrap(True)
+    content_layout.addWidget(self.provider_detail)
+
+    self.feedback = QLabel()
+    self.feedback.setObjectName("Feedback")
+    self.feedback.setWordWrap(True)
+    content_layout.addWidget(self.feedback)
+
+    self.dashboard_page = DashboardPage()
+    self.providers_page = ProvidersPage()
+    self.slots_page = SlotsPage()
+    self.sessions_page = SessionsPage()
+    self.objects_page = ObjectsPage()
+    self.page_stack = QStackedWidget()
+    for page in (
+        self.dashboard_page,
+        self.providers_page,
+        self.slots_page,
+        self.sessions_page,
+        self.objects_page,
+    ):
+        self.page_stack.addWidget(page)
+    content_layout.addWidget(self.page_stack, 1)
+
+    root_layout.addWidget(sidebar)
+    root_layout.addWidget(content, 1)
+    self.setCentralWidget(root)
+    self.statusBar().showMessage(self._last_status)
+
+    self.dashboard_page.navigate_requested.connect(self._navigate)
+    self.providers_page.load_module_requested.connect(self._choose_module)
+    self.providers_page.virtual_provider_requested.connect(self._switch_to_virtual)
+    self.providers_page.refresh_requested.connect(self._refresh_provider)
+    self.slots_page.slot_selected.connect(self._slot_selection_changed)
+    self.slots_page.create_slot_requested.connect(self._create_slot)
+    self.slots_page.initialize_token_requested.connect(self._initialize_token)
+    self.slots_page.clear_token_requested.connect(self._clear_token)
+    self.slots_page.delete_slot_requested.connect(self._delete_slot)
+    self.slots_page.manage_keys_requested.connect(self._open_slot_keys)
+    self.sessions_page.refresh_requested.connect(self._refresh_sessions)
+    self.sessions_page.open_session_requested.connect(self._open_session)
+    self.sessions_page.close_session_requested.connect(self._close_session)
+    self.sessions_page.login_requested.connect(self._login_session)
+    self.sessions_page.logout_requested.connect(self._logout_session)
+    self.objects_page.refresh_requested.connect(self._load_objects)
+    self._navigate(0)

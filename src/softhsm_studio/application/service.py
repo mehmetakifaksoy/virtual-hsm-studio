@@ -58,6 +58,18 @@ class HsmService:
         )
 
     @property
+    def supports_token_initialization(self) -> bool:
+        return bool(getattr(self._provider, "supports_token_initialization", False))
+
+    @property
+    def supports_key_management(self) -> bool:
+        # Existing isolated PKCS#11 key adapter; object discovery alone does
+        # not imply support for this generation workflow.
+        return self.supports_virtual_admin or bool(
+            getattr(self._provider, "supports_key_management", False)
+        )
+
+    @property
     def supports_sessions(self) -> bool:
         return isinstance(
             self._provider,
@@ -140,9 +152,7 @@ class HsmService:
     ) -> None:
         """Close an active provider session."""
 
-        self._session_capability().close_session(
-            session_id
-        )
+        self._session_capability().close_session(session_id)
 
     def sessions(
         self,
@@ -154,9 +164,7 @@ class HsmService:
         returned.
         """
 
-        return self._session_capability().list_sessions(
-            slot_id
-        )
+        return self._session_capability().list_sessions(slot_id)
 
     # ------------------------------------------------------------------
     # Authentication
@@ -194,9 +202,7 @@ class HsmService:
     ) -> SessionInfo:
         """Logout the current USER/SO authentication state."""
 
-        return self._session_capability().logout(
-            session_id
-        )
+        return self._session_capability().logout(session_id)
 
     # ------------------------------------------------------------------
     # Objects
@@ -224,9 +230,7 @@ class HsmService:
     ) -> list[MechanismInfo]:
         """Return cryptographic mechanisms exposed by a slot."""
 
-        return self._mechanism_capability().list_mechanisms(
-            slot_id
-        )
+        return self._mechanism_capability().list_mechanisms(slot_id)
 
     # ------------------------------------------------------------------
     # Virtual HSM administration
@@ -236,17 +240,13 @@ class HsmService:
         self,
         description: str,
     ) -> SlotInfo:
-        return self._virtual_admin().create_slot(
-            description
-        )
+        return self._virtual_admin().create_slot(description)
 
     def delete_virtual_slot(
         self,
         slot_id: int,
     ) -> None:
-        self._virtual_admin().delete_slot(
-            slot_id
-        )
+        self._virtual_admin().delete_slot(slot_id)
 
     def initialize_virtual_token(
         self,
@@ -266,9 +266,7 @@ class HsmService:
         self,
         slot_id: int,
     ) -> None:
-        self._virtual_admin().clear_token(
-            slot_id
-        )
+        self._virtual_admin().clear_token(slot_id)
 
     # ------------------------------------------------------------------
     # Capability guards
@@ -284,8 +282,7 @@ class HsmService:
             SessionCapability,
         ):
             raise OperationNotSupportedError(
-                "The active HSM provider does not support "
-                "session management."
+                "The active HSM provider does not support session management."
             )
 
         return provider
@@ -300,8 +297,7 @@ class HsmService:
             ObjectCapability,
         ):
             raise OperationNotSupportedError(
-                "The active HSM provider does not support "
-                "object discovery."
+                "The active HSM provider does not support object discovery."
             )
 
         return provider
@@ -316,8 +312,7 @@ class HsmService:
             MechanismCapability,
         ):
             raise OperationNotSupportedError(
-                "The active HSM provider does not support "
-                "mechanism discovery."
+                "The active HSM provider does not support mechanism discovery."
             )
 
         return provider
@@ -332,8 +327,7 @@ class HsmService:
             VirtualHsmAdmin,
         ):
             raise OperationNotSupportedError(
-                "This operation is only available "
-                "for the Virtual HSM provider."
+                "This operation is only available for the Virtual HSM provider."
             )
 
         return provider
