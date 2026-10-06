@@ -150,6 +150,12 @@ class SlotActions:
         initialized = (
             selected is not None and selected.token is not None and selected.token.initialized
         )
+        self.slots_page.set_provider_mode(
+            is_virtual_admin,
+            is_virtual_admin or isinstance(self.service.provider, Pkcs11ModuleProvider),
+            self.service.supports_token_initialization,
+        )
+        self.keys_button.setEnabled(initialized and self.service.supports_key_management and not self._busy)
         self.slots_page.set_action_availability(
             can_create=is_virtual_admin and not self._busy,
             can_initialize=can_initialize and not self._busy,
@@ -160,5 +166,4 @@ class SlotActions:
                 and not self._busy
             ),
             can_delete=is_virtual_admin and selected is not None and not self._busy,
-            can_manage_keys=initialized and self.service.supports_key_management and not self._busy,
         )

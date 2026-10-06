@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from PySide6.QtCore import Qt, QTimer
+from PySide6.QtCore import Qt
 from PySide6.QtGui import QDragEnterEvent, QDropEvent
 from PySide6.QtWidgets import (
     QFileDialog,
@@ -11,21 +11,38 @@ from PySide6.QtWidgets import (
 )
 
 from softhsm_studio.application import HsmService
+from softhsm_studio.application.audit import SafeAudit
+from softhsm_studio.application.cloud import ExternalByokWorkflow
+from softhsm_studio.application.sovereignty import ProtectBeforeCloud
 from softhsm_studio.domain.models import ProviderKind, SessionInfo, SlotInfo
+from softhsm_studio.infrastructure.cloud.huawei import FakeHuaweiByokAdapter
+from softhsm_studio.infrastructure.local_crypto import AesGcmCipher
 from softhsm_studio.infrastructure.pkcs11 import Pkcs11ModuleProvider
 from softhsm_studio.infrastructure.virtual_hsm import VirtualHsmProvider
+from softhsm_studio.infrastructure.virtual_hsm.wrapping import VirtualMemoryKeyWrapper
 from softhsm_studio.runtime import DisconnectedProvider, prepare_module, settings
 
 from .pages.object_actions import ObjectActions
 from .pages.session_actions import SessionActions
 from .pages.slot_actions import SlotActions
+from .pages.sovereignty_actions import SovereigntyActions
 from .widgets.console import build_console
 from .workers import ProviderConnectThread, ProviderRefreshThread
 
 
-class MainWindow(SlotActions, SessionActions, ObjectActions, QMainWindow):
+class MainWindow(SovereigntyActions, SlotActions, SessionActions, ObjectActions, QMainWindow):
     MODULE_SUFFIXES = {".dll", ".so", ".dylib"}
-    PAGE_NAMES = ("Dashboard", "Providers", "Slots", "Sessions", "Objects")
+    PAGE_NAMES = (
+        "Dashboard",
+        "Providers",
+        "Slots/Tokens",
+        "Sessions",
+        "Objects",
+        "Keys",
+        "Cloud Integration",
+        "Key Sovereignty",
+        "Audit/Diagnostics",
+    )
 
     def __init__(self, tool: str = "admin") -> None:
         super().__init__()
@@ -42,22 +59,16 @@ class MainWindow(SlotActions, SessionActions, ObjectActions, QMainWindow):
         self._busy = False
         self._last_status = "Connect an HSM provider to begin."
 
+        self.audit = SafeAudit()
+        self.key_wrapper = VirtualMemoryKeyWrapper()
+        self.protection = ProtectBeforeCloud(AesGcmCipher(), self.key_wrapper, self.audit)
+        self.cloud_workflow = ExternalByokWorkflow(FakeHuaweiByokAdapter(), self.audit)
         self._build_ui()
         self._render_provider()
         self._render_slots(self.slots)
         self._set_status(self._last_status)
 
-        bundled_module = (
-            Path(__file__).resolve().parents[3]
-            / "tools"
-            / "softhsm2"
-            / "SoftHSM2"
-            / "lib"
-            / "softhsm2-x64.dll"
-        )
-        last_module = settings().value("module", "") or str(bundled_module)
-        if last_module and Path(last_module).is_file():
-            QTimer.singleShot(0, lambda: self._load_module(Path(last_module)))
+        # Native modules are loaded only after an explicit user selection.
 
     def _build_ui(self) -> None:
         build_console(self)
@@ -106,6 +117,7 @@ class MainWindow(SlotActions, SessionActions, ObjectActions, QMainWindow):
         thread.start()
 
     def _provider_connected(self, provider, slots) -> None:
+        self.key_wrapper.close()
         self.service.activate_connected(provider)
         if isinstance(provider, Pkcs11ModuleProvider):
             settings().setValue("module", str(provider.module_path))
@@ -150,6 +162,9 @@ class MainWindow(SlotActions, SessionActions, ObjectActions, QMainWindow):
         info = self.service.provider_info
         connected = not isinstance(self.service.provider, DisconnectedProvider)
         kind = "Virtual" if info.kind is ProviderKind.VIRTUAL else "PKCS#11"
+        self.provider_badge.setProperty("connected", connected)
+        self.provider_badge.style().unpolish(self.provider_badge)
+        self.provider_badge.style().polish(self.provider_badge)
         self.provider_badge.setText(f"{kind} · Connected" if connected else "Not connected")
         self.provider_title.setText(info.name if connected else "HSM Management Console")
         parts = [part for part in (info.manufacturer, info.version, info.module_path) if part]
@@ -164,6 +179,7 @@ class MainWindow(SlotActions, SessionActions, ObjectActions, QMainWindow):
         self._render_sessions()
         self._update_virtual_buttons()
         self._update_dashboard()
+        self._refresh_protection_context()
 
     def _render_sessions(self) -> None:
         supported = self.service.supports_sessions
@@ -226,6 +242,8 @@ class MainWindow(SlotActions, SessionActions, ObjectActions, QMainWindow):
         )
         self.sessions_page.set_busy(busy, self.service.supports_sessions)
         self.objects_page.set_busy(busy)
+        self.dashboard_page.set_busy(busy)
+        self._refresh_protection_context()
         self._set_status(message)
         self._update_virtual_buttons()
         if busy:
@@ -254,6 +272,7 @@ class MainWindow(SlotActions, SessionActions, ObjectActions, QMainWindow):
             self._set_status("Provider cleanup failed. Close its sessions and retry.")
             event.ignore()
             return
+        self.key_wrapper.close()
         event.accept()
 
     def dragEnterEvent(self, event: QDragEnterEvent) -> None:
@@ -274,4 +293,4 @@ class MainWindow(SlotActions, SessionActions, ObjectActions, QMainWindow):
                 return
 
     def _is_supported_module(self, path: Path) -> bool:
-        return path.is_file() and path.suffix.lower() in self.MODULE_SUFFIXES   
+        return path.is_file() and path.suffix.lower() in self.MODULE_SUFFIXES

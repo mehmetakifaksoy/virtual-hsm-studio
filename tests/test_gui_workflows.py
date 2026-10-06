@@ -56,6 +56,8 @@ def test_real_gui_slot_token_and_session_flows(monkeypatch, tmp_path):
     errors = []
     try:
         click(window.navigation[2])
+        if not window.slots_page.advanced_button.isChecked():
+            click(window.slots_page.advanced_button)
 
         def create(dialog):
             assert isinstance(dialog, CreateSlotDialog)

@@ -7,6 +7,7 @@ from PySide6.QtWidgets import (
     QAbstractItemView,
     QHBoxLayout,
     QHeaderView,
+    QGroupBox,
     QLabel,
     QPushButton,
     QSplitter,
@@ -26,7 +27,6 @@ class SlotsPage(QWidget):
     initialize_token_requested = Signal()
     clear_token_requested = Signal()
     delete_slot_requested = Signal()
-    manage_keys_requested = Signal()
 
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
@@ -35,7 +35,7 @@ class SlotsPage(QWidget):
         layout.setSpacing(12)
 
         header = QHBoxLayout()
-        heading = QLabel("Slots")
+        heading = QLabel("Slots & Tokens")
         heading.setObjectName("PageTitle")
         header.addWidget(heading)
         header.addStretch(1)
@@ -46,26 +46,28 @@ class SlotsPage(QWidget):
 
         actions = QHBoxLayout()
         self.create_button = self._button(
-            "Create Slot", self.create_slot_requested, "PrimaryButton"
+            "Add Demo Slot", self.create_slot_requested, "PrimaryButton"
         )
         self.initialize_button = self._button("Initialize Token", self.initialize_token_requested)
-        self.clear_button = self._button("Clear Token", self.clear_token_requested)
-        self.delete_button = self._button("Delete Slot", self.delete_slot_requested, "DangerButton")
-        self.keys_button = self._button("Manage Keys", self.manage_keys_requested, "PrimaryButton")
-        for button in (
-            self.create_button,
-            self.initialize_button,
-            self.clear_button,
-            self.delete_button,
-            self.keys_button,
-        ):
-            actions.addWidget(button)
+        self.clear_button = self._button("Remove Demo Token", self.clear_token_requested)
+        self.delete_button = self._button("Delete Demo Slot", self.delete_slot_requested, "DangerButton")
+        actions.addWidget(self.initialize_button)
         actions.addStretch(1)
         layout.addLayout(actions)
 
-        self.guidance = QLabel(
-            "Select a slot to inspect its token. Create, clear and delete are Virtual HSM operations."
-        )
+        self.demo_admin = QGroupBox("Demo only · Virtual slot administration")
+        demo_layout = QHBoxLayout(self.demo_admin)
+        for button in (self.create_button, self.clear_button, self.delete_button):
+            demo_layout.addWidget(button)
+        demo_layout.addStretch(1)
+        self.advanced_button = QPushButton("Advanced demo controls")
+        self.advanced_button.setCheckable(True)
+        self.advanced_button.toggled.connect(self.demo_admin.setVisible)
+        layout.addWidget(self.advanced_button)
+        layout.addWidget(self.demo_admin)
+        self.demo_admin.hide()
+
+        self.guidance = QLabel("Select a slot to inspect its token. Create, clear and delete are Virtual HSM operations.")
         self.guidance.setObjectName("Muted")
         self.guidance.setWordWrap(True)
         layout.addWidget(self.guidance)
@@ -83,19 +85,34 @@ class SlotsPage(QWidget):
         self.table.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
         self.table.horizontalHeader().setStretchLastSection(True)
         self.table.itemSelectionChanged.connect(self._selection_changed)
-        self.table.doubleClicked.connect(self._manage_selected_keys)
         splitter.addWidget(self.table)
 
+        self.details_button = QPushButton("Show technical details")
+        self.details_button.setCheckable(True)
+        layout.addWidget(self.details_button)
         self.details = QTextBrowser()
         self.details.setOpenExternalLinks(False)
         self.details.setMinimumWidth(280)
         splitter.addWidget(self.details)
+        self.details.hide()
+        self.details_button.toggled.connect(self.details.setVisible)
         splitter.setSizes([620, 400])
         layout.addWidget(splitter, 1)
 
-    def _manage_selected_keys(self, _index) -> None:
-        if self.keys_button.isEnabled():
-            self.manage_keys_requested.emit()
+    def set_provider_mode(self, virtual: bool, connected: bool, initialization: bool) -> None:
+        self.advanced_button.setVisible(connected and virtual)
+        self.demo_admin.setVisible(connected and virtual and self.advanced_button.isChecked())
+        self.initialize_button.setVisible(connected and (virtual or initialization))
+        self.initialize_button.setText("Prepare Demo Token" if virtual else "Initialize Token")
+        self.guidance.setText(
+            "Demo mode. Select a slot and prepare its token with a name and PINs."
+            if connected and virtual else
+            "Connected HSM. Select a slot to view its token. "
+            + ("Token initialization is available." if initialization else
+               "Token setup is not implemented here; use your vendor administration tool.")
+            if connected else
+            "Start a demo or connect an HSM from the Home screen."
+        )
 
     @staticmethod
     def _button(text: str, signal, object_name: str = "") -> QPushButton:
@@ -153,7 +170,6 @@ class SlotsPage(QWidget):
             self.initialize_button,
             self.clear_button,
             self.delete_button,
-            self.keys_button,
         ):
             button.setEnabled(not busy and button.isEnabled())
 
@@ -164,13 +180,11 @@ class SlotsPage(QWidget):
         can_initialize: bool,
         can_clear: bool,
         can_delete: bool,
-        can_manage_keys: bool,
     ) -> None:
         self.create_button.setEnabled(can_create)
         self.initialize_button.setEnabled(can_initialize)
         self.clear_button.setEnabled(can_clear)
         self.delete_button.setEnabled(can_delete)
-        self.keys_button.setEnabled(can_manage_keys)
 
     def _selection_changed(self) -> None:
         selected = self.selected_slot

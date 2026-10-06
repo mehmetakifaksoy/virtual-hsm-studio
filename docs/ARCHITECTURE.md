@@ -1,6 +1,45 @@
 # Architecture
 
-SoftHSM Studio uses a provider architecture so the GUI is independent of any specific HSM implementation.
+## Key Sovereignty and Cloud BYOK
+
+Virtual HSM Studio is a Vendor-agnostic HSM, PKCS#11 and Key Sovereignty Platform.
+Domain contracts in `domain/sovereignty.py` describe reference-only KEKs, DEK/envelope
+metadata, packages and optional cipher/wrapping capabilities. `domain/cloud.py` describes
+generic External BYOK metadata, import parameters, wrapped material and client operations.
+Domain and application have no Huawei, PKCS#11 library or Qt dependency.
+
+`application/sovereignty.py` orchestrates local DEK generation, capability checks, wrapping
+and authenticated encryption/decryption. It receives cipher, wrapping and audit ports;
+no cloud or upload dependency exists. Wrapping is separate from existing HSM/session ports,
+so unsupported providers remain usable. `application/cloud.py` orchestrates separate BYOK.
+
+Infrastructure contains `local_crypto.py`, `envelope_store.py`, explicit
+`virtual_hsm/wrapping.py` and offline `cloud/huawei/fake.py`. Future live Huawei code stays
+behind the same port. Native wrapping is absent and fails closed in the GUI, with no silent
+virtual fallback. Virtual KEKs belong to the POC capability, not persistent simulator objects.
+
+MainWindow composes adapters and use cases. Existing provider/slot/session/object pages
+remain, alongside Keys, Cloud Integration, Key Sovereignty and Audit/Diagnostics. Pages emit
+signals and handlers invoke use cases. Pages are scrollable. HSM connect/refresh workers remain;
+local protection is synchronous with a 16 MiB cap. Standalone Key Manager and Sign & Verify
+remain available. Native modules require explicit selection on every launch.
+
+Envelope v1 JSON contains metadata (key_reference, wrapping_mode, nonce, wrapped_dek, dek,
+version, algorithm), ciphertext and tag. Binary fields use strict base64. Known algorithms,
+nonce/tag lengths and wrapping modes are validated. Canonical sorted JSON metadata is GCM AAD.
+Plaintext is returned only after authentication; persisted packages contain no plaintext DEK/KEK.
+
+Huawei contract references, not evidence of live integration:
+
+- [External import workflow](https://support.huaweicloud.com/intl/en-us/usermanual-dew/dew_01_0089.html)
+- [Import parameters](https://support.huaweicloud.com/intl/en-us/api-dew/CreateParametersForImport.html)
+- [Import material](https://support.huaweicloud.com/intl/en-us/api-dew/ImportKeyMaterial.html)
+
+The fake uses transient RSA-2048/RSAES_OAEP_SHA_256 parameters and generic pending-import/enabled
+states, not Huawei wire enums. No HTTP requests or imported-key persistence occur.
+SoftHSMv2 is an independent compatible/test provider; no official affiliation is implied.
+
+Virtual HSM Studio uses a provider architecture so the GUI is independent of any specific HSM implementation.
 
 ```text
 Presentation (PySide6)
@@ -63,7 +102,7 @@ object attribute values or cryptographic key material.
 
 ## Why the PKCS#11 worker is separate
 
-Native PKCS#11 libraries execute inside the process that loads them. A vendor module can block, crash, initialize global state, or conflict with another PKCS#11 implementation. SoftHSM Studio therefore performs discovery in a separate process and exchanges only JSON snapshots with the GUI process.
+Native PKCS#11 libraries execute inside the process that loads them. A vendor module can block, crash, initialize global state, or conflict with another PKCS#11 implementation. Virtual HSM Studio therefore performs discovery in a separate process and exchanges only JSON snapshots with the GUI process.
 
 ## Planned next adapters/features
 
