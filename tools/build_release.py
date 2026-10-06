@@ -9,7 +9,7 @@ import subprocess
 import sys
 
 ROOT = Path(__file__).resolve().parents[1]
-VERSION = '0.4.0-beta.2'
+VERSION = '0.5.0-alpha.1'
 TOOLS = (
     ('VirtualHsmStudio', 'Virtual HSM Studio', 'windows.spec'),
     ('HsmKeyManager', 'HSM Key Manager', 'key_manager.spec'),
@@ -66,8 +66,10 @@ def main():
     parser=argparse.ArgumentParser()
     parser.add_argument('--makensis',type=Path,required=True)
     parser.add_argument('--skip-build',action='store_true')
+    parser.add_argument('--output-dir', type=Path, default=ROOT/'dist/release')
+    parser.add_argument('--tool', choices=[item[0] for item in TOOLS], action='append')
     args=parser.parse_args()
-    output=ROOT/'dist/release'
+    output=args.output_dir.resolve()
     output.mkdir(parents=True,exist_ok=True)
     (ROOT/'work').mkdir(exist_ok=True)
     env=os.environ.copy()
@@ -76,6 +78,8 @@ def main():
     env['PYINSTALLER_CONFIG_DIR']=str(ROOT/'work/pyinstaller-cache')
     assets=[]
     for name,product,spec in TOOLS:
+        if args.tool and name not in args.tool:
+            continue
         print('Building '+name,flush=True)
         if not args.skip_build:
             with (ROOT/'work'/f'{name}-release-build.log').open('w',encoding='utf-8') as log:

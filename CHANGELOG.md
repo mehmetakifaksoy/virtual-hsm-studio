@@ -2,6 +2,8 @@
 
 ## Unreleased — Key Sovereignty POC (2026-10-06)
 
+- Added versioned 0.5.0-alpha.1 Windows test installers/portable packages and feature-branch Actions downloads.
+
 - Repositioned as Vendor-agnostic HSM, PKCS#11 and Key Sovereignty Platform.
 - Preserved local HSM console changes and reconciled origin/main on the feature branch.
 - Added reference-only KEK/DEK/envelope models and capability-based local AES-256-GCM.

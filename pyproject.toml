@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "softhsm-studio"
-version = "0.4.0b2"
+version = "0.5.0a1"
 description = "Vendor-agnostic HSM, PKCS#11 and Key Sovereignty Platform"
 readme = "README.md"
 requires-python = ">=3.11"

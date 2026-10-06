@@ -1,0 +1,41 @@
+name: Windows Key Sovereignty Preview
+
+on:
+  push:
+    branches: [feature/key-sovereignty-poc]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  package:
+    runs-on: windows-latest
+    timeout-minutes: 30
+    env:
+      QT_QPA_PLATFORM: offscreen
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - name: Install dependencies
+        run: python -m pip install -e ".[dev]"
+      - name: Test source
+        run: |
+          python -m compileall -q src tests
+          python -m pytest -q --basetemp=.pytest-tmp/ci
+      - name: Install installer compiler
+        run: choco install nsis --yes --no-progress
+      - name: Build Studio preview
+        run: python tools/build_release.py --makensis "C:/Program Files (x86)/NSIS/makensis.exe" --output-dir dist/preview --tool VirtualHsmStudio
+      - name: Test packaged EXE
+        run: python tools/smoke_windows_bundle.py dist/VirtualHsmStudio
+      - name: Upload test downloads
+        uses: actions/upload-artifact@v4
+        with:
+          name: VirtualHsmStudio-0.5.0-alpha.1-Windows-x64
+          path: dist/preview/*
+          if-no-files-found: error
+          retention-days: 14

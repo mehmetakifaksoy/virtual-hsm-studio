@@ -22,6 +22,12 @@ The existing Key Manager and Sign & Verify applications remain available. SoftHS
 
 ## Previous packaged preview
 
+The Key Sovereignty branch produces **0.5.0-alpha.1** test downloads in the
+[Windows Preview workflow](https://github.com/mehmetakifaksoy/virtual-hsm-studio/actions/workflows/windows-preview.yml).
+Open a successful run and download its artifact (GitHub sign-in required); extract it to find
+the Setup EXE, portable ZIP and SHA256SUMS.txt. Test artifacts expire after 14 days.
+See the [updated Windows test guide](docs/WINDOWS_POC.md). These are unsigned test builds.
+
 The installers below predate Key Sovereignty and **do not contain the new source-branch POC**.
 
 Three Windows applications for PKCS#11 HSM workflows. **POC preview · v0.4.0-beta.2**
